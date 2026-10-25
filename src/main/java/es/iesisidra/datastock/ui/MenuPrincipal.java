@@ -36,8 +36,14 @@ public class MenuPrincipal {
                     // llamamos al metodo
                     inventario.explorarRuta(ruta);
                 }
-                case 2 -> pendiente("RF-FIC-02 · Importar productos desde JSON");
-                case 3 -> pendiente("RF-FIC-03 · Importar productos desde XML");
+                case 2 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta del fichero JSON: ");
+                    inventario.importarJson(ruta);
+                }
+                case 3 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta del fichero XML: ");
+                    inventario.importarXml(ruta);
+                }
                 case 4 -> menuConsultas();
                 case 5 -> menuExportaciones();
                 case 6 -> menuSerializacion();
