@@ -2,8 +2,17 @@ package es.iesisidra.datastock.servicio;
 
 import java.io.File;
 import java.io.FileReader;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -12,6 +21,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 import es.iesisidra.datastock.modelo.Producto;
+import es.iesisidra.datastock.repository.ProductoXmlRepository;
 import es.iesisidra.datastock.util.ColoresConsola;
 
 /**
@@ -290,4 +300,158 @@ public class Inventario {
 
     }
 
+    // Atributo en la clase Inventario
+private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
+
+/**
+ * Importa un catálogo de productos desde un fichero XML usando DOM.
+ * Lee el fichero con el repositorio, valida los campos con if-else tradicionales
+ * y añade solo los registros válidos al inventario.
+ */
+    public void importarXml(String ruta) {
+        // 1. Validar si la ruta recibida es nula o está vacía
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: La ruta está vacía." + ColoresConsola.RESET);
+            return;
+        }
+
+        // 2. Comprobar existencia del fichero con la API Path de Java NIO
+        Path path = Paths.get(ruta.trim());
+        if (!Files.exists(path) || Files.isDirectory(path)) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
+            return;
+        }
+
+        try {
+            // 3. Cargar el árbol de nodos DOM a través del repositorio seguro
+            Document doc = xmlRepository.leer(path);
+
+            // Obtenemos todos los elementos con la etiqueta <producto>
+            NodeList listaNodos = doc.getElementsByTagName("producto");
+            int encontrados = listaNodos.getLength();
+
+            int importados = 0;
+            int rechazados = 0;
+            List<String> incidencias = new ArrayList<>();
+
+            // 4. Recorrido imperativo de la lista de nodos (sin lambdas ni iteradores complejos)
+            for (int i = 0; i < encontrados; i++) {
+                Node nodo = listaNodos.item(i);
+
+                // Filtrar solo los nodos tipo elemento para evitar nodos de texto/saltos de línea
+                if (nodo.getNodeType() == Node.ELEMENT_NODE) {
+                    Element elemento = (Element) nodo;
+                    try {
+                        // Extraer textos de las etiquetas
+                        String codigo = obtenerTextoEtiqueta(elemento, "codigo");
+                        String nombre = obtenerTextoEtiqueta(elemento, "nombre");
+
+                        // Parseo del precio mediante estructura if-else sin operador ternario
+                        String strPrecio = obtenerTextoEtiqueta(elemento, "precio");
+                        BigDecimal precio = null;
+                        if (strPrecio != null && !strPrecio.isEmpty()) {
+                            try {
+                                precio = new BigDecimal(strPrecio);
+                            } catch (NumberFormatException nfe) {
+                                precio = null;
+                            }
+                        }
+
+                        // Parseo del stock
+                        String strStock = obtenerTextoEtiqueta(elemento, "stock");
+                        int stock = 0;
+                        if (strStock != null && !strStock.isEmpty()) {
+                            stock = Integer.parseInt(strStock);
+                        }
+
+                        // Parseo de los IDs
+                        String strCatId = obtenerTextoEtiqueta(elemento, "categoriaId");
+                        int categoriaId = 0;
+                        if (strCatId != null && !strCatId.isEmpty()) {
+                            categoriaId = Integer.parseInt(strCatId);
+                        }
+
+                        String strProvId = obtenerTextoEtiqueta(elemento, "proveedorId");
+                        int proveedorId = 0;
+                        if (strProvId != null && !strProvId.isEmpty()) {
+                            proveedorId = Integer.parseInt(strProvId);
+                        }
+
+                        // Construcción del objeto Producto
+                        Producto p = new Producto(codigo, nombre, precio, stock, categoriaId, proveedorId);
+
+                        if (p.getCodigo() != null) {
+                            p.setCodigo(p.getCodigo().trim());
+                        }
+
+                        // Reutilizar el método de validación común (sin lambdas/break)
+                        List<String> errores = validarProducto(p);
+
+                        if (errores.isEmpty()) {
+                            productos.add(p);
+                            importados++;
+                        } else {
+                            rechazados++;
+                            StringBuilder msjError = new StringBuilder();
+                            for (int j = 0; j < errores.size(); j++) {
+                                msjError.append(errores.get(j));
+                                if (j < errores.size() - 1) {
+                                    msjError.append(", ");
+                                }
+                            }
+
+                            // Determinar el identificador para la incidencia sin interrogación (sin ternario)
+                            String cod;
+                            if (p.getCodigo() != null && !p.getCodigo().isEmpty()) {
+                                cod = p.getCodigo();
+                            } else {
+                                cod = "Producto " + (i + 1);
+                            }
+
+                            incidencias.add(cod + ": " + msjError.toString());
+                        }
+
+                    } catch (Exception e) {
+                        rechazados++;
+                        incidencias.add("Producto " + (i + 1) + ": Error al parsear los datos.");
+                    }
+                }
+            }
+
+            // 5. Presentación de resultados por consola
+            System.out.println("---- IMPORTAR XML ----");
+            System.out.println("Ruta: " + ruta);
+            System.out.println("Productos encontrados: " + encontrados);
+            System.out.println("Importados: " + importados + " | Rechazados: " + rechazados);
+
+            if (!incidencias.isEmpty()) {
+                System.out.println("INCIDENCIAS:");
+                for (String inc : incidencias) {
+                    System.out.println(" - " + inc);
+                }
+            }
+
+        } catch (org.xml.sax.SAXException e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero XML está malformado. Importación cancelada." + ColoresConsola.RESET);
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR al leer el fichero: " + e.getMessage() + ColoresConsola.RESET);
+        }
+    }
+
+    /**
+     * Método auxiliar privado para obtener el valor texto de una etiqueta hija.
+     */
+    private String obtenerTextoEtiqueta(Element elementoPadre, String nombreEtiqueta) {
+        NodeList lista = elementoPadre.getElementsByTagName(nombreEtiqueta);
+        // si la lista existe y tiene al menos un elemento
+        if (lista != null && lista.getLength() > 0) {
+            Node nodo = lista.item(0);
+            // si el nodo existe y tiene texto dentro
+            if (nodo != null && nodo.getTextContent() != null) {
+                return nodo.getTextContent().trim();
+            }
+        }
+        // si la ertiqueta no existia o estaba vacioa
+        return null;
+    }
 }
