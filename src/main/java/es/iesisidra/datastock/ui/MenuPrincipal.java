@@ -71,9 +71,17 @@ public class MenuPrincipal {
             System.out.println("0. Volver al menú principal");
             opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 3);
             switch (opcion) {
-                case 1 -> pendiente("RF-FIC-04 · Listar productos");
-                case 2 -> pendiente("RF-FIC-04 · Buscar por código");
-                case 3 -> pendiente("RF-FIC-04 · Buscar por nombre");
+                case 1 -> {
+                    inventario.listarTodos();
+                }
+                case 2 -> {
+                    String codigo = LectorConsola.leerTexto("Introduce el codigo");
+                    inventario.buscarPorCodigo(codigo);
+                }
+                case 3 ->  {
+                    String nombre = LectorConsola.leerTexto("Introduce el nombre");
+                    inventario.buscarPorNombre(nombre);
+                }
                 case 0 -> { }
                 default -> throw new IllegalStateException("Opción inesperada");
             }

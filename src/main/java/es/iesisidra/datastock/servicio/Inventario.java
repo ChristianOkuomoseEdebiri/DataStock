@@ -300,14 +300,14 @@ public class Inventario {
 
     }
 
-    // Atributo en la clase Inventario
-private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
+    // Instancia reutilizable del repositorio
+    private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
 
-/**
- * Importa un catálogo de productos desde un fichero XML usando DOM.
- * Lee el fichero con el repositorio, valida los campos con if-else tradicionales
- * y añade solo los registros válidos al inventario.
- */
+    /**
+     * Importa un catálogo de productos desde un fichero XML usando DOM. Lee el
+     * fichero con el repositorio, valida los campos con if-else tradicionales y
+     * añade solo los registros válidos al inventario.
+     */
     public void importarXml(String ruta) {
         // 1. Validar si la ruta recibida es nula o está vacía
         if (ruta == null || ruta.trim().isEmpty()) {
@@ -442,6 +442,7 @@ private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
      * Método auxiliar privado para obtener el valor texto de una etiqueta hija.
      */
     private String obtenerTextoEtiqueta(Element elementoPadre, String nombreEtiqueta) {
+
         NodeList lista = elementoPadre.getElementsByTagName(nombreEtiqueta);
         // si la lista existe y tiene al menos un elemento
         if (lista != null && lista.getLength() > 0) {
@@ -454,4 +455,90 @@ private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
         // si la ertiqueta no existia o estaba vacioa
         return null;
     }
+
+    public void listarTodos() {
+        if (productos.isEmpty()) { // si esta vacio no debo mostrar nada mas que el aviso
+            System.out.println(ColoresConsola.AMARILLO + "El inventario esta vacio" + ColoresConsola.RESET);
+            return;
+        }
+
+        // ordeno por el metodo burbuja
+        int n = productos.size();
+        for (int i = 0; i < n - 1; i++) { // este for se encarga de repetir el proceso hasta que se culmine la ordenacion
+            for (int j = 0; j < n - i - 1; j++) { // este for nos ayuda a comparar a "vecinos" es decir de dos en dos
+                String c1 = productos.get(j).getCodigo();
+                // siempre seleccionamos el que este un puesto a la derecha del
+                String c2 = productos.get(j + 1).getCodigo();
+
+                // tengo que tener cuidado ya que no puedo hacer un compare.ToIgnoraCase si uno de los dos es null
+
+                if (c1 == null) {
+                    c1 = "";
+                }
+                if (c2 == null) {
+                    c2 = "";
+                }
+
+                // si el código actual es alfabeticamente mayor que el siguiente se intercambian
+                if (c1.compareToIgnoreCase(c2) > 0) {
+                    Producto temp = productos.get(j);
+                    productos.set(j, productos.get(j + 1));
+                    productos.set(j + 1, temp);
+                }
+
+            }
+
+        }
+
+        System.out.println("---- LISTADO DE PRODUCTOS ----");
+            for (int k = 0; k < productos.size(); k++) { // enseño todos los productos
+                System.out.println(productos.get(k).toString());
+                
+            }
+    }
+
+    public void buscarPorCodigo(String codigo) {
+        if (codigo == null) {
+            System.out.println(ColoresConsola.ROJO + "El codigo no puede estar vacio" + ColoresConsola.RESET);
+            return;
+        }
+
+        // en caso de que el codigo tenga algo entramos al for a comparar
+    
+
+        for (Producto producto : productos) {
+            if (producto.getCodigo() != null) { // no puedo comparar si es null
+                if (producto.getCodigo().equals(codigo.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
+                    System.out.println(producto.toString());
+                }
+
+            }
+
+            
+        }
+    }
+
+    public void buscarPorNombre (String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el equalsIgnoreCase
+        if (nombre == null) {
+            System.out.println(ColoresConsola.ROJO + "El nombre no puede estar vacio" + ColoresConsola.RESET);
+            return;
+        }
+
+        // en caso de que el codigo tenga algo entramos al for a comparar
+    
+
+        for (Producto producto : productos) {
+            if (producto.getCodigo() != null) { // no puedo comparar si es null
+                if (producto.getCodigo().equals(nombre.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
+                    System.out.println(producto.toString());
+                }
+
+            }
+            
+        }
+
+    }
+
+    
+
 }
