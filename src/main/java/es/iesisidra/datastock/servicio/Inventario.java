@@ -2,6 +2,7 @@ package es.iesisidra.datastock.servicio;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,17 +10,21 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
+import es.iesisidra.datastock.config.XmlConfig;
 import es.iesisidra.datastock.modelo.Producto;
 import es.iesisidra.datastock.repository.ProductoXmlRepository;
 import es.iesisidra.datastock.util.ColoresConsola;
@@ -180,6 +185,12 @@ public class Inventario {
         return errores;
     }
 
+    /**
+     * Metodo para importar JSON con comprobaciones y validando el producto en
+     * base a las reglas impuestas en nuestro metodo validarProducto
+     *
+     * @param ruta
+     */
     public void importarJson(String ruta) {
         // primero valido la ruta
         if (ruta == null || ruta.trim().isEmpty()) {
@@ -307,6 +318,8 @@ public class Inventario {
      * Importa un catálogo de productos desde un fichero XML usando DOM. Lee el
      * fichero con el repositorio, valida los campos con if-else tradicionales y
      * añade solo los registros válidos al inventario.
+     *
+     * @param ruta
      */
     public void importarXml(String ruta) {
         // 1. Validar si la ruta recibida es nula o está vacía
@@ -471,7 +484,6 @@ public class Inventario {
                 String c2 = productos.get(j + 1).getCodigo();
 
                 // tengo que tener cuidado ya que no puedo hacer un compare.ToIgnoraCase si uno de los dos es null
-
                 if (c1 == null) {
                     c1 = "";
                 }
@@ -491,21 +503,19 @@ public class Inventario {
         }
 
         System.out.println("---- LISTADO DE PRODUCTOS ----");
-            for (int k = 0; k < productos.size(); k++) { // enseño todos los productos
-                System.out.println(productos.get(k).toString());
-                
-            }
+        for (int k = 0; k < productos.size(); k++) { // enseño todos los productos
+            System.out.println(productos.get(k).toString());
+
+        }
     }
 
     public void buscarPorCodigo(String codigo) {
-        if (codigo == null) {
+        if (codigo == null || codigo.trim().isEmpty()) {
             System.out.println(ColoresConsola.ROJO + "El codigo no puede estar vacio" + ColoresConsola.RESET);
             return;
         }
 
         // en caso de que el codigo tenga algo entramos al for a comparar
-    
-
         for (Producto producto : productos) {
             if (producto.getCodigo() != null) { // no puedo comparar si es null
                 if (producto.getCodigo().equals(codigo.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
@@ -514,19 +524,16 @@ public class Inventario {
 
             }
 
-            
         }
     }
 
-    public void buscarPorNombre (String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el equalsIgnoreCase
-        if (nombre == null) {
+    public void buscarPorNombre(String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el equalsIgnoreCase
+        if (nombre == null || nombre.trim().isEmpty()) {
             System.out.println(ColoresConsola.ROJO + "El nombre no puede estar vacio" + ColoresConsola.RESET);
             return;
         }
 
         // en caso de que el codigo tenga algo entramos al for a comparar
-    
-
         for (Producto producto : productos) {
             if (producto.getCodigo() != null) { // no puedo comparar si es null
                 if (producto.getCodigo().equals(nombre.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
@@ -534,11 +541,123 @@ public class Inventario {
                 }
 
             }
-            
+
         }
 
     }
 
-    
+    /**
+     * Metodo exportarJson que nos permite exportar el catalogo de productos a
+     * un fichero en formato JSON usando la libreria GSON
+     *
+     * @param ruta Ruta del fichero donde se guaradara el JSON
+     */
+    public void exportarJson(String ruta) {
+        // si no hay nada no exportamos
+        if (productos.isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
+            return;
+        }
+
+        // la ruta debe ser valida
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: La ruta de destino no es válida." + ColoresConsola.RESET);
+            return;
+        }
+
+        // creo una instancia de Gson configurada para aplicar formato legible (pretty printing)
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        // try-with-resources para abrir y cerrar el writer de forma segura
+        try (FileWriter writer = new FileWriter(ruta.trim())) {
+
+            // convierto la lista de productos completa a texto JSON
+            gson.toJson(productos, writer);
+
+            System.out.println(ColoresConsola.VERDE + "Catalogo exportado correctamente a JSON en: " + ruta + ColoresConsola.RESET);
+
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR al exportar a JSON: " + e.getMessage() + ColoresConsola.RESET);
+        }
+
+    }
+
+    /**
+     * Exporta el catálogo actual de productos a un fichero en formato XML
+     * utilizando DOM
+     *
+     * @param ruta Ruta del fichero de destino donde se guarda el XML
+     */
+    public void exportarXml(String ruta) {
+        if (productos.isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
+            return;
+        }
+
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: La ruta de destino no es válida." + ColoresConsola.RESET);
+            return;
+        }
+
+        try {
+            // Inicializo un nuevo documento DOM en blanco
+            DocumentBuilder builder = XmlConfig.domFactory().newDocumentBuilder();
+            Document doc = builder.newDocument();
+
+            // creo el nodo raiz <catalogo> y lo añadimos al documento
+            Element root = doc.createElement("catalogo");
+            doc.appendChild(root);
+
+            // Recorro para incluir todos los productos
+            for (int i = 0; i < productos.size(); i++) {
+                Producto p = productos.get(i);
+
+                // creo la etiqueta del nodo producto
+                Element elemProducto = doc.createElement("producto");
+
+                // añado las etiquetas hijas con sus valores correspondientes
+                crearEtiquetaHija(doc, elemProducto, "codigo", p.getCodigo());
+                crearEtiquetaHija(doc, elemProducto, "nombre", p.getNombre());
+
+                String strPrecio = "";
+                if (p.getPrecio() != null) {
+                    strPrecio = p.getPrecio().toString();
+                }
+
+                // creo las etiquetas de los atributos de cada producto
+                crearEtiquetaHija(doc, elemProducto, "precio", strPrecio);
+                crearEtiquetaHija(doc, elemProducto, "stock", String.valueOf(p.getStock()));
+                crearEtiquetaHija(doc, elemProducto, "categoriaId", String.valueOf(p.getCategoriaId()));
+                crearEtiquetaHija(doc, elemProducto, "proveedorId", String.valueOf(p.getProveedorId()));
+
+                // pongo cada producto en el catalogo
+                root.appendChild(elemProducto);
+            }
+
+            // uso el emtodo del repositorio para guardar toda la estrictura del cocumento creado
+            Path pathDestino = Paths.get(ruta.trim());
+            xmlRepository.guardar(doc, pathDestino);
+
+            System.out.println(ColoresConsola.VERDE + "Catálogo exportado correctamente a XML en: " + ruta + ColoresConsola.RESET);
+
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR al exportar a XML: " + e.getMessage() + ColoresConsola.RESET);
+        }
+    }
+
+    /**
+     * Metodo auxiliar privado para simplificar la creación y adición de
+     * etiquetas hijas al DOM
+     */
+
+    private void crearEtiquetaHija(Document doc, Element padre, String nombreEtiqueta, String valorTexto) {
+        Element hija = doc.createElement(nombreEtiqueta);
+        if (valorTexto != null) {
+            hija.setTextContent(valorTexto);
+        } else {
+            hija.setTextContent("");
+        }
+        padre.appendChild(hija);
+    }
 
 }

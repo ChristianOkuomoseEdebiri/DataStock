@@ -97,8 +97,14 @@ public class MenuPrincipal {
             System.out.println("0. Volver al menú principal");
             opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 2);
             switch (opcion) {
-                case 1 -> pendiente("RF-FIC-05 · Exportar JSON");
-                case 2 -> pendiente("RF-FIC-05 · Exportar XML");
+                case 1 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta en donde exportar los productos");
+                    inventario.exportarJson(ruta);
+                }
+                case 2 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta en donde exportar los productos");
+                    inventario.exportarXml(ruta);
+                }
                 case 0 -> { }
                 default -> throw new IllegalStateException("Opción inesperada");
             }
