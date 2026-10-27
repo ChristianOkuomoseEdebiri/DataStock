@@ -55,4 +55,29 @@ public final class LectorConsola {
 
     /** Detiene el menú hasta que el usuario pulse Intro. */
     public static void pausar() { leerTexto("Pulsa Intro para continuar..."); }
+
+
+    /**
+ * Lee un número decimal (double) desde la consola controlando excepciones de formato.
+ * 
+ * @param mensaje Texto a mostrar al usuario.
+ * @return El valor double introducido por el usuario.
+ */
+public static double leerDouble(String mensaje) {
+    double valor = 0.0;
+    boolean valido = false;
+
+    while (!valido) {
+        try {
+            System.out.print(mensaje);
+            String entrada = TECLADO.nextLine().trim().replace(',', '.'); // Permite coma o punto
+            valor = Double.parseDouble(entrada);
+            valido = true;
+        } catch (NumberFormatException e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: Debe introducir un número decimal valido" + ColoresConsola.RESET);
+        }
+    }
+
+    return valor;
+}
 }

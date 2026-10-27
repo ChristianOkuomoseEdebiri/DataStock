@@ -27,8 +27,9 @@ public class MenuPrincipal {
             System.out.println("4. Consultar productos");
             System.out.println("5. Exportar productos");
             System.out.println("6. Guardar y recuperar inventario");
+            System.out.println("7. Consulta XML mediante XPath");
             System.out.println("0. Salir");
-            opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 6);
+            opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 7);
             switch (opcion) {
                 case 1 -> {
                     // pedimos la ruta
@@ -47,6 +48,10 @@ public class MenuPrincipal {
                 case 4 -> menuConsultas();
                 case 5 -> menuExportaciones();
                 case 6 -> menuSerializacion();
+                case 7 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta");
+                    inventario.consultaXPath(ruta);
+                }
                 case 0 -> System.out.println(ColoresConsola.pintar("Hasta pronto.", ColoresConsola.VERDE));
                 default -> throw new IllegalStateException("Opción inesperada");
             }
