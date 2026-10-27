@@ -1,8 +1,12 @@
 package es.iesisidra.datastock.servicio;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +32,7 @@ import es.iesisidra.datastock.config.XmlConfig;
 import es.iesisidra.datastock.modelo.Producto;
 import es.iesisidra.datastock.repository.ProductoXmlRepository;
 import es.iesisidra.datastock.util.ColoresConsola;
+import es.iesisidra.datastock.util.LectorConsola;
 
 /**
  * Estado común del inventario durante la ejecución de UT1.
@@ -649,7 +654,6 @@ public class Inventario {
      * Metodo auxiliar privado para simplificar la creación y adición de
      * etiquetas hijas al DOM
      */
-
     private void crearEtiquetaHija(Document doc, Element padre, String nombreEtiqueta, String valorTexto) {
         Element hija = doc.createElement(nombreEtiqueta);
         if (valorTexto != null) {
@@ -658,6 +662,99 @@ public class Inventario {
             hija.setTextContent("");
         }
         padre.appendChild(hija);
+    }
+
+    /**
+     * Metodo encargado de la serializacion de productos
+     *
+     * @param ruta donde se crea el archivo .dat
+     */
+    public void serializarProductos(String ruta) {
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "La ruta no puede estar vacia" + ColoresConsola.RESET);
+            return; // no sigo
+        }
+
+        if (productos.isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "No hay productos" + ColoresConsola.RESET);
+            return;
+        }
+
+        // uso try-with-resources para asegurar bien el cierre
+        String confirmacion = LectorConsola.leerTexto("Todo preparado para la serializacion confirmacion: SI/NO");
+        if (confirmacion == null || confirmacion.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "La confirmacion no puede estar vacia debe ser si o no"
+                    + ColoresConsola.RESET);
+            return;
+        }
+
+        // si es false no sigo
+        if (!LectorConsola.confirmar(confirmacion)) {
+            System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
+            return;
+        }
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ruta.trim()))) {
+            oos.writeObject(productos);
+            System.out.println(ColoresConsola.VERDE + productos.size() + " productos serializados correctamente" + ColoresConsola.RESET);
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR a la hora de serializar los productos: " + e.getMessage()
+                    + ColoresConsola.RESET);
+
+        }
+
+    }
+
+    /**
+     * Metodo encargado de obtener los productos ya serializados
+     *
+     * @param ruta donde esta el archivo .dat
+     */
+    public void deserializarProductos(String ruta) {
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "La ruta no puede estar vacia" + ColoresConsola.RESET);
+            return; // no sigo
+        }
+
+        if (!productos.isEmpty()) {
+            String confirmacion = LectorConsola.leerTexto(
+                    "Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N");
+            if (confirmacion == null || confirmacion.trim().isEmpty()) {
+                System.out.println(ColoresConsola.ROJO + "La confirmacion no puede estar vacia debe ser S o N"
+                        + ColoresConsola.RESET);
+                return;
+            }
+
+            // si es false no sigo
+            if (!LectorConsola.confirmar(confirmacion)) {
+                System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
+                return;
+            }
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ruta.trim()))) {
+            // obtengo los productos
+            List<Producto> productosObtenidos = (List<Producto>) ois.readObject();
+            // creo una lista auxiliar
+            List<Producto> listaAuxiliar = new ArrayList<>();
+
+            // si el producto cumple todo entonces va a mi lista auxiliar
+            for (Producto producto : productosObtenidos) {
+                if (validarProducto(producto).isEmpty()) {
+                    listaAuxiliar.add(producto);
+                }
+            }
+
+            // quito los que estaban anteriormente y añado los deserializados
+            productos.clear();
+            productos.addAll(listaAuxiliar);
+            System.out.println(ColoresConsola.VERDE + productos.size() + " productos obtenidos correctamente" + ColoresConsola.RESET);
+
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR a la hora de obtener los productos: " + e.getMessage()
+                    + ColoresConsola.RESET);
+        }
+
     }
 
 }

@@ -120,8 +120,14 @@ public class MenuPrincipal {
             System.out.println("0. Volver al menú principal");
             opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 2);
             switch (opcion) {
-                case 1 -> pendiente("RF-FIC-06 · Guardar inventario");
-                case 2 -> pendiente("RF-FIC-06 · Recuperar inventario");
+                case 1 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta");
+                    inventario.serializarProductos(ruta);
+                }
+                case 2 -> {
+                    String ruta = LectorConsola.leerTexto("Introduce la ruta");
+                    inventario.deserializarProductos(ruta);
+                }
                 case 0 -> { }
                 default -> throw new IllegalStateException("Opción inesperada");
             }
