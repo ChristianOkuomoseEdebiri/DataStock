@@ -171,12 +171,12 @@ public class MenuPrincipal {
 
             switch (subOpcion) {
                 case 1 -> {
-                    inventario.generarStockBinario("datos/stock.bin");
+                    inventario.generarStockBinario("datos/salidas/stock.bin");
 
                 }
 
                 case 2 -> {
-                    inventario.gestionarAccesoAleatorioStock("datos/stock.bin");
+                    inventario.gestionarAccesoAleatorioStock("datos/salidas/stock.bin");
                 }
                 case 0 -> {
                 }

@@ -1034,7 +1034,7 @@ public class Inventario {
 
 /**
  * Metodo para gestionar un registro en el fichero binario con seek
- * @param ruta
+ * @param ruta 
  */
 public void gestionarAccesoAleatorioStock(String ruta) {
     // valido que la ruta recibida no sea nula ni este vacia
