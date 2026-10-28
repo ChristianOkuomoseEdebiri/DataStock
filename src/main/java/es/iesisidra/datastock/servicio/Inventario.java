@@ -143,7 +143,7 @@ public class Inventario {
      * @param p
      * @return
      */
-    private List<String> validarProducto(Producto p) {
+    private List<String> validarProducto(Producto p, List<Producto> listaReferencia) {
         List<String> errores = new ArrayList<>();
 
         // 1. Comprobaciones del codigo
@@ -287,7 +287,7 @@ public class Inventario {
                     }
 
                     // validamos las reglas predefinidas antes
-                    List<String> errores = validarProducto(p);
+                    List<String> errores = validarProducto(p, this.productos);
 
                     // si esta vacio no hay errores
                     if (errores.isEmpty()) {
@@ -458,7 +458,7 @@ public class Inventario {
                         }
 
                         // Reutilizar el método de validación común
-                        List<String> errores = validarProducto(p);
+                        List<String> errores = validarProducto(p, this.productos);
 
                         if (errores.isEmpty()) {
                             productos.add(p);
@@ -716,8 +716,7 @@ public class Inventario {
                 root.appendChild(elemProducto);
             }
 
-            // uso el emtodo del repositorio para guardar toda la estrictura del cocumento
-            // creado
+            // uso el metodo del repositorio para guardar toda la estrictura del documento creado
             Path pathDestino = Paths.get(ruta.trim());
             xmlRepository.guardar(doc, pathDestino);
 
@@ -760,16 +759,9 @@ public class Inventario {
             return;
         }
 
-        // uso try-with-resources para asegurar bien el cierre
-        String confirmacion = LectorConsola.leerTexto("Todo preparado para la serializacion confirmacion: SI/NO");
-        if (confirmacion == null || confirmacion.trim().isEmpty()) {
-            System.out.println(ColoresConsola.ROJO + "La confirmacion no puede estar vacia debe ser si o no"
-                    + ColoresConsola.RESET);
-            return;
-        }
 
         // si es false no sigo
-        if (!LectorConsola.confirmar(confirmacion)) {
+        if (!LectorConsola.confirmar("Todo preparado para la serializacion confirmacion: S/N")) {
             System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
             return;
         }
@@ -807,16 +799,9 @@ public class Inventario {
 
 
         if (!productos.isEmpty()) {
-            String confirmacion = LectorConsola.leerTexto(
-                    "Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N");
-            if (confirmacion == null || confirmacion.trim().isEmpty()) {
-                System.out.println(ColoresConsola.ROJO + "La confirmacion no puede estar vacia debe ser S o N"
-                        + ColoresConsola.RESET);
-                return;
-            }
 
             // si es false no sigo
-            if (!LectorConsola.confirmar(confirmacion)) {
+            if (!LectorConsola.confirmar("Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N")) {
                 System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
                 return;
             }
@@ -840,7 +825,7 @@ public class Inventario {
             // si el producto cumple todo entonces va a mi lista auxiliar, pero si uno no cumple los requisitos paramos todo el proceso (Todo o nada)
             for (Object obj : productosObtenidos) {
                 if (obj instanceof Producto p) {
-                    if (validarProducto(p).isEmpty()) {
+                    if (validarProducto(p, listaAuxiliar).isEmpty()) {
                         listaAuxiliar.add(p);
                     } else {
                         throw new IllegalArgumentException("Error a la hora de validar un producto");
@@ -973,7 +958,7 @@ public class Inventario {
         String nom = elem.getElementsByTagName("nombre").item(0).getTextContent();
         String precio = elem.getElementsByTagName("precio").item(0).getTextContent();
 
-        System.out.println(cod + "   " + nom + "   " + precio + " €");
+        System.out.println(cod + "   " + nom + "   " + precio + "   euros"); // el simbolo de euro por consola sale como interrogacion
     }
 
     /**
@@ -989,7 +974,7 @@ public class Inventario {
 
     // pido confirmacion al usuario antes de sobrescribir el archivo
     String confirmacion = LectorConsola.leerTexto("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ");
-    if (confirmacion == null || !LectorConsola.confirmar(confirmacion)) {
+    if (!LectorConsola.confirmar("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ")) {
         System.out.println(ColoresConsola.VERDE + "Operación cancelada por el usuario." + ColoresConsola.RESET);
         return;
     }
@@ -1105,7 +1090,7 @@ public void gestionarAccesoAleatorioStock(String ruta) {
         int stockAntiguo = raf.readInt();
 
         // muestro la informacion del registro leido
-        System.out.println(codigo + " | " + precio + " € | stock " + stockAntiguo);
+        System.out.println(codigo + " | " + precio + " euros | stock " + stockAntiguo);
 
         // solicito el nuevo valor del stock
         int nuevoStock = LectorConsola.leerEntero("Nuevo stock: ");
