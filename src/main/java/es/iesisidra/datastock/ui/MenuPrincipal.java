@@ -6,17 +6,25 @@ import es.iesisidra.datastock.util.LectorConsola;
 
 /**
  * Presentación de menús y navegación de la primera fase de DataStock.
- * <p>Los métodos marcados TODO son puntos de partida, NO soluciones de los
- * requisitos. El alumnado deberá delegar el acceso a ficheros, la validación
- * y el procesamiento en métodos o clases independientes.</p>
+ * <p>
+ * Los métodos marcados TODO son puntos de partida, NO soluciones de los
+ * requisitos. El alumnado deberá delegar el acceso a ficheros, la validación y
+ * el procesamiento en métodos o clases independientes.</p>
  */
 public class MenuPrincipal {
+
     private final Inventario inventario;
 
-    /** @param inventario colección común de productos de esta ejecución. */
-    public MenuPrincipal(Inventario inventario) { this.inventario = inventario; }
+    /**
+     * @param inventario colección común de productos de esta ejecución.
+     */
+    public MenuPrincipal(Inventario inventario) {
+        this.inventario = inventario;
+    }
 
-    /** Ejecuta el menú principal hasta que el usuario selecciona salir. */
+    /**
+     * Ejecuta el menú principal hasta que el usuario selecciona salir.
+     */
     public void iniciar() {
         int opcion;
         do {
@@ -28,8 +36,9 @@ public class MenuPrincipal {
             System.out.println("5. Exportar productos");
             System.out.println("6. Guardar y recuperar inventario");
             System.out.println("7. Consulta XML mediante XPath");
+            System.out.println("8. Gestion de Stock Binario");
             System.out.println("0. Salir");
-            opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 7);
+            opcion = LectorConsola.leerOpcion("Selecciona una opción: ", 0, 8);
             switch (opcion) {
                 case 1 -> {
                     // pedimos la ruta
@@ -45,15 +54,21 @@ public class MenuPrincipal {
                     String ruta = LectorConsola.leerTexto("Introduce la ruta del fichero XML: ");
                     inventario.importarXml(ruta);
                 }
-                case 4 -> menuConsultas();
-                case 5 -> menuExportaciones();
-                case 6 -> menuSerializacion();
+                case 4 ->
+                    menuConsultas();
+                case 5 ->
+                    menuExportaciones();
+                case 6 ->
+                    menuSerializacion();
                 case 7 -> {
                     String ruta = LectorConsola.leerTexto("Introduce la ruta");
                     inventario.consultaXPath(ruta);
                 }
-                case 0 -> System.out.println(ColoresConsola.pintar("Hasta pronto.", ColoresConsola.VERDE));
-                default -> throw new IllegalStateException("Opción inesperada");
+                case 8 -> menuGestionBinario();
+                case 0 ->
+                    System.out.println(ColoresConsola.pintar("Hasta pronto.", ColoresConsola.VERDE));
+                default ->
+                    throw new IllegalStateException("Opción inesperada");
             }
         } while (opcion != 0);
     }
@@ -83,12 +98,14 @@ public class MenuPrincipal {
                     String codigo = LectorConsola.leerTexto("Introduce el codigo");
                     inventario.buscarPorCodigo(codigo);
                 }
-                case 3 ->  {
+                case 3 -> {
                     String nombre = LectorConsola.leerTexto("Introduce el nombre");
                     inventario.buscarPorNombre(nombre);
                 }
-                case 0 -> { }
-                default -> throw new IllegalStateException("Opción inesperada");
+                case 0 -> {
+                }
+                default ->
+                    throw new IllegalStateException("Opción inesperada");
             }
         } while (opcion != 0);
     }
@@ -110,8 +127,10 @@ public class MenuPrincipal {
                     String ruta = LectorConsola.leerTexto("Introduce la ruta en donde exportar los productos");
                     inventario.exportarXml(ruta);
                 }
-                case 0 -> { }
-                default -> throw new IllegalStateException("Opción inesperada");
+                case 0 -> {
+                }
+                default ->
+                    throw new IllegalStateException("Opción inesperada");
             }
         } while (opcion != 0);
     }
@@ -133,16 +152,50 @@ public class MenuPrincipal {
                     String ruta = LectorConsola.leerTexto("Introduce la ruta");
                     inventario.deserializarProductos(ruta);
                 }
-                case 0 -> { }
-                default -> throw new IllegalStateException("Opción inesperada");
+                case 0 -> {
+                }
+                default ->
+                    throw new IllegalStateException("Opción inesperada");
             }
         } while (opcion != 0);
     }
 
-    /** Sustituir las llamadas por servicios propios a medida que se implementen los RF. */
-    private void pendiente(String requisito) {
+    private void menuGestionBinario() {
+        int subOpcion;
+        do {
+            System.out.println("\n---- GESTIÓN DE STOCK BINARIO (RF-FIC-08) ----");
+            System.out.println("1. Generar / Sobrescribir stock.bin desde memoria");
+            System.out.println("2. Consultar / Modificar stock por posición aleatoria (seek)");
+            System.out.println("0. Volver al menú principal");
+            subOpcion = LectorConsola.leerOpcion("Elige opción: ", 0, 2);
+
+            switch (subOpcion) {
+                case 1 -> {
+                    inventario.generarStockBinario("datos/stock.bin");
+
+                }
+
+                case 2 -> {
+                    inventario.gestionarAccesoAleatorioStock("datos/stock.bin");
+                }
+                case 0 -> {
+                }
+
+                default ->
+                    throw new IllegalStateException("Opción inesperada");
+
+            }
+
+        } while (subOpcion != 0);
+    }
+
+    /**
+     * Sustituir las llamadas por servicios propios a medida que se implementen
+     * los RF.
+     */
+    /*private void pendiente(String requisito) {
         System.out.println(ColoresConsola.pintar("[PENDIENTE] " + requisito, ColoresConsola.AMARILLO));
         System.out.println("Esta funcionalidad debe desarrollarla el alumnado.");
         LectorConsola.pausar();
-    }
+    } */
 }

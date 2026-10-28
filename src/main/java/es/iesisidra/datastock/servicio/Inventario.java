@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +43,8 @@ import es.iesisidra.datastock.util.LectorConsola;
  * <p>
  * Esta clase solo proporciona la colección compartida. No implementa
  * importación, validación, búsqueda, exportación ni persistencia: esos son
- * ejercicios que deberá desarrollar el alumnado.</p>
+ * ejercicios que deberá desarrollar el alumnado.
+ * </p>
  */
 public class Inventario {
 
@@ -52,7 +54,8 @@ public class Inventario {
      * Obtiene la colección que comparten las opciones del menú.
      * <p>
      * ATENCIÓN: la lista es modificable. El alumnado deberá aplicar las reglas
-     * del enunciado antes de añadir o sustituir elementos.</p>
+     * del enunciado antes de añadir o sustituir elementos.
+     * </p>
      */
     public List<Producto> getProductos() {
         return productos;
@@ -67,8 +70,9 @@ public class Inventario {
     public void explorarRuta(String ruta) {
 
         try {
-            if (ruta == null || ruta.trim().isEmpty()) { //la ruta que me dan no debe estar vacia
-                System.out.println(ColoresConsola.ROJO + "ERROR: Se debe proporcionar una ruta válida (el texto está vacio)" + ColoresConsola.RESET);
+            if (ruta == null || ruta.trim().isEmpty()) { // la ruta que me dan no debe estar vacia
+                System.out.println(ColoresConsola.ROJO
+                        + "ERROR: Se debe proporcionar una ruta válida (el texto está vacio)" + ColoresConsola.RESET);
                 return; // no seguimos
             }
             // en caso de que la entrada no este vacia
@@ -77,7 +81,8 @@ public class Inventario {
 
             // Primer caso: la ruta no existe
             if (!archivo.exists()) {
-                System.out.println(ColoresConsola.ROJO + "ERROR: Se debe proporcionar una ruta válida (no existe)" + ColoresConsola.RESET);
+                System.out.println(ColoresConsola.ROJO + "ERROR: Se debe proporcionar una ruta válida (no existe)"
+                        + ColoresConsola.RESET);
                 return; // no seguimos
             }
 
@@ -93,10 +98,12 @@ public class Inventario {
             if (archivo.isDirectory()) {
                 System.out.println("---- EXPLORAR DIRECTORIO ----");
                 System.out.println("[RUTA] " + ruta);
-                File[] contenido = archivo.listFiles(); // obtenemos el contenido del directorio y nos preparamos para recorrerlo en caso de que no este vacio
+                File[] contenido = archivo.listFiles(); // obtenemos el contenido del directorio y nos preparamos para
+                // recorrerlo en caso de que no este vacio
 
                 if (contenido == null) { // es nulo o no contiene nada
-                    System.out.println(ColoresConsola.AMARILLO + "AVISO: NO HAY CONTENIDO EN LA RUTA PROPORCIONADA" + ColoresConsola.RESET);
+                    System.out.println(ColoresConsola.AMARILLO + "AVISO: NO HAY CONTENIDO EN LA RUTA PROPORCIONADA"
+                            + ColoresConsola.RESET);
                     return; // no seguimos
                 }
 
@@ -110,7 +117,7 @@ public class Inventario {
                         totalFicheros++; // sumo
                     } else if (file.isDirectory()) {
                         System.out.println("[DIR] " + file.getName());
-                        totalDirectorios++; //sumo
+                        totalDirectorios++; // sumo
                     }
                 }
 
@@ -119,10 +126,12 @@ public class Inventario {
             }
 
         } catch (SecurityException se) { // el sistema operativo bloquea por permisos
-            System.out.println(ColoresConsola.ROJO + "Error de acceso: Permisos denegados por el sistema " + se.getMessage() + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.ROJO + "Error de acceso: Permisos denegados por el sistema "
+                    + se.getMessage() + ColoresConsola.RESET);
 
         } catch (Exception e) { // cualquier otra excepcion inesperada
-            System.out.println(ColoresConsola.ROJO + "Error inesperado al explorar la ruta " + e.getMessage() + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.ROJO + "Error inesperado al explorar la ruta " + e.getMessage()
+                    + ColoresConsola.RESET);
         }
 
     }
@@ -149,10 +158,11 @@ public class Inventario {
                 errores.add("No cumple con el patron valido");
             }
 
-            // hay que comprobar si existe en memorio
+            // hay que comprobar si existe en memoria
             boolean duplicado = false;
             int i = 0; // para recorrer todos los productos
-            while (i < productos.size() && !duplicado) { // mientras no tenga mas posiciones de procutos que recorrer y no haya encontradado un duplicado
+            while (i < productos.size() && !duplicado) { // mientras no tenga mas posiciones de procutos que recorrer y
+                // no haya encontradado un duplicado
                 Producto prod = productos.get(i);
                 if (prod.getCodigo() != null && prod.getCodigo().equalsIgnoreCase(codigoLimpio)) {
                     duplicado = true;
@@ -210,7 +220,8 @@ public class Inventario {
         File archivo = new File(ruta.trim());
         try {
             if (!archivo.exists() || !archivo.isFile()) { // debe de existir y no ser un directorio
-                System.out.println(ColoresConsola.ROJO + "La ruta introducida no existe/es un directorio" + ColoresConsola.RESET);
+                System.out.println(
+                        ColoresConsola.ROJO + "La ruta introducida no existe/es un directorio" + ColoresConsola.RESET);
                 return;
             }
 
@@ -229,7 +240,8 @@ public class Inventario {
 
             // verifico que la raiz tenga "productos" y que efectivamente sea un array
             if (!root.has("productos") || !root.get("productos").isJsonArray()) {
-                System.out.println(ColoresConsola.ROJO + "La raiz debe debe contener el array de productos" + ColoresConsola.RESET);
+                System.out.println(
+                        ColoresConsola.ROJO + "La raiz debe contener el array de productos" + ColoresConsola.RESET);
                 return;
             }
 
@@ -248,8 +260,26 @@ public class Inventario {
             for (int i = 0; i < encontrados; i++) {
 
                 try {
-                    // deserealizo el objeto en una instancia de la clase Producto
-                    Producto p = gson.fromJson(arrayproductos.get(i), Producto.class);
+                    // Verificamos que el elemento actual del array sea efectivamente un objeto JSON
+                    if (!arrayproductos.get(i).isJsonObject()) {
+                        throw new IllegalArgumentException("El elemento no es un objeto JSON válido.");
+                    }
+
+                    JsonObject elem = arrayproductos.get(i).getAsJsonObject();
+
+                    // Validamos que los campos obligatorios existan y no sean tipos incompatibles
+                    if (!elem.has("codigo") || elem.get("codigo").isJsonNull()) {
+                        throw new IllegalArgumentException("El código es obligatorio (campo ausente/vacío)");
+                    }
+                    if (!elem.has("precio") || elem.get("precio").isJsonNull()) {
+                        throw new IllegalArgumentException("El precio es obligatorio (campo ausente/vacío)");
+                    }
+                    if (!elem.has("stock") || elem.get("stock").isJsonNull()) {
+                        throw new IllegalArgumentException("El stock es obligatorio (campo ausente/vacío)");
+                    }
+
+                    // deserializo el objeto en una instancia de la clase Producto
+                    Producto p = gson.fromJson(elem, Producto.class);
 
                     // limpio espacios del codigo del producto
                     if (p.getCodigo() != null) { // si es nulo e intento hacer .trim tendria problemas
@@ -287,10 +317,12 @@ public class Inventario {
                         incidencias.add(cod + ": " + mensajeError.toString());
                     }
 
+                } catch (IllegalArgumentException iae) {
+                    rechazados++;
+                    incidencias.add("Producto " + (i + 1) + ": " + iae.getMessage());
                 } catch (Exception e) {
                     rechazados++;
-                    incidencias.add("Producto " + (i + 1) + ": Error en el formato de datos");
-
+                    incidencias.add("Producto " + (i + 1) + ": Error en el formato de datos.");
                 }
 
             }
@@ -305,18 +337,20 @@ public class Inventario {
             if (!incidencias.isEmpty()) {
                 System.out.println("INCIDENCIAS:");
                 for (String inc : incidencias) {
-                    System.out.println(" - " + inc);
+                    System.out.println("  - " + inc);
                 }
                 System.out.println("Importación finalizada con incidencias");
             } else {
                 System.out.println("Importación finalizada con éxito");
             }
-        } catch (JsonSyntaxException jse) { // ssuelen ser errores de sintaxis del JSON
-            System.out.println(ColoresConsola.ROJO + "Error: El fichero JSON está malformado. Se cancela la importación." + jse.getMessage() + ColoresConsola.RESET);
+        } catch (JsonSyntaxException jse) { // suelen ser errores de sintaxis del JSON
+            System.out
+                    .println(ColoresConsola.ROJO + "Error: El fichero JSON está malformado. Se cancela la importación. "
+                            + jse.getMessage() + ColoresConsola.RESET);
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR al leer el fichero: " + e.getMessage() + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR al leer el fichero: " + e.getMessage() + ColoresConsola.RESET);
         }
-
     }
 
     // Instancia reutilizable del repositorio
@@ -324,8 +358,8 @@ public class Inventario {
 
     /**
      * Importa un catálogo de productos desde un fichero XML usando DOM. Lee el
-     * fichero con el repositorio, valida los campos con if-else tradicionales y
-     * añade solo los registros válidos al inventario.
+     * fichero con el repositorio y valida los campos añade solo los registros
+     * válidos al inventario.
      *
      * @param ruta
      */
@@ -336,10 +370,11 @@ public class Inventario {
             return;
         }
 
-        // 2. Comprobar existencia del fichero con la API Path de Java NIO
+        // Comprobar existencia del fichero
         Path path = Paths.get(ruta.trim());
         if (!Files.exists(path) || Files.isDirectory(path)) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
             return;
         }
 
@@ -355,11 +390,11 @@ public class Inventario {
             int rechazados = 0;
             List<String> incidencias = new ArrayList<>();
 
-            // 4. Recorrido imperativo de la lista de nodos (sin lambdas ni iteradores complejos)
             for (int i = 0; i < encontrados; i++) {
                 Node nodo = listaNodos.item(i);
 
-                // Filtrar solo los nodos tipo elemento para evitar nodos de texto/saltos de línea
+                // Filtrar solo los nodos tipo elemento para evitar nodos de texto/saltos de
+                // línea
                 if (nodo.getNodeType() == Node.ELEMENT_NODE) {
                     Element elemento = (Element) nodo;
                     try {
@@ -367,35 +402,52 @@ public class Inventario {
                         String codigo = obtenerTextoEtiqueta(elemento, "codigo");
                         String nombre = obtenerTextoEtiqueta(elemento, "nombre");
 
-                        // Parseo del precio mediante estructura if-else sin operador ternario
+                        // Parseo del precio
                         String strPrecio = obtenerTextoEtiqueta(elemento, "precio");
-                        BigDecimal precio = null;
-                        if (strPrecio != null && !strPrecio.isEmpty()) {
-                            try {
-                                precio = new BigDecimal(strPrecio);
-                            } catch (NumberFormatException nfe) {
-                                precio = null;
-                            }
+                        if (strPrecio == null || strPrecio.trim().isEmpty()) {
+                            throw new IllegalArgumentException("El precio es obligatorio (campo ausente/vacío)");
+                        }
+                        BigDecimal precio;
+                        try {
+                            precio = new BigDecimal(strPrecio.trim().replace(',', '.'));
+                        } catch (NumberFormatException nfe) {
+                            throw new IllegalArgumentException(
+                                    "El precio no tiene un formato decimal válido ('" + strPrecio + "')");
                         }
 
                         // Parseo del stock
                         String strStock = obtenerTextoEtiqueta(elemento, "stock");
-                        int stock = 0;
-                        if (strStock != null && !strStock.isEmpty()) {
-                            stock = Integer.parseInt(strStock);
+                        if (strStock == null || strStock.trim().isEmpty()) {
+                            throw new IllegalArgumentException("El stock es obligatorio (campo ausente/vacío)");
+                        }
+                        int stock;
+                        try {
+                            stock = Integer.parseInt(strStock.trim());
+                        } catch (NumberFormatException nfe) {
+                            throw new IllegalArgumentException("El stock debe ser un entero válido (" + strStock + ")");
                         }
 
                         // Parseo de los IDs
                         String strCatId = obtenerTextoEtiqueta(elemento, "categoriaId");
                         int categoriaId = 0;
-                        if (strCatId != null && !strCatId.isEmpty()) {
-                            categoriaId = Integer.parseInt(strCatId);
+                        if (strCatId != null && !strCatId.trim().isEmpty()) {
+                            try {
+                                categoriaId = Integer.parseInt(strCatId.trim());
+                            } catch (NumberFormatException nfe) {
+                                throw new IllegalArgumentException(
+                                        "El ID de categoría debe ser numérico (" + strCatId + ")");
+                            }
                         }
 
                         String strProvId = obtenerTextoEtiqueta(elemento, "proveedorId");
                         int proveedorId = 0;
-                        if (strProvId != null && !strProvId.isEmpty()) {
-                            proveedorId = Integer.parseInt(strProvId);
+                        if (strProvId != null && !strProvId.trim().isEmpty()) {
+                            try {
+                                proveedorId = Integer.parseInt(strProvId.trim());
+                            } catch (NumberFormatException nfe) {
+                                throw new IllegalArgumentException(
+                                        "El ID de proveedor debe ser numérico ('" + strProvId + "')");
+                            }
                         }
 
                         // Construcción del objeto Producto
@@ -405,7 +457,7 @@ public class Inventario {
                             p.setCodigo(p.getCodigo().trim());
                         }
 
-                        // Reutilizar el método de validación común (sin lambdas/break)
+                        // Reutilizar el método de validación común
                         List<String> errores = validarProducto(p);
 
                         if (errores.isEmpty()) {
@@ -421,7 +473,7 @@ public class Inventario {
                                 }
                             }
 
-                            // Determinar el identificador para la incidencia sin interrogación (sin ternario)
+                            // Determinar el identificador
                             String cod;
                             if (p.getCodigo() != null && !p.getCodigo().isEmpty()) {
                                 cod = p.getCodigo();
@@ -432,6 +484,13 @@ public class Inventario {
                             incidencias.add(cod + ": " + msjError.toString());
                         }
 
+                    } catch (IllegalArgumentException iae) {
+                        rechazados++;
+                        String cod = obtenerTextoEtiqueta(elemento, "codigo");
+                        if (cod == null || cod.trim().isEmpty()) {
+                            cod = "Producto " + (i + 1);
+                        }
+                        incidencias.add(cod + ": " + iae.getMessage());
                     } catch (Exception e) {
                         rechazados++;
                         incidencias.add("Producto " + (i + 1) + ": Error al parsear los datos.");
@@ -439,7 +498,6 @@ public class Inventario {
                 }
             }
 
-            // 5. Presentación de resultados por consola
             System.out.println("---- IMPORTAR XML ----");
             System.out.println("Ruta: " + ruta);
             System.out.println("Productos encontrados: " + encontrados);
@@ -448,14 +506,16 @@ public class Inventario {
             if (!incidencias.isEmpty()) {
                 System.out.println("INCIDENCIAS:");
                 for (String inc : incidencias) {
-                    System.out.println(" - " + inc);
+                    System.out.println("  - " + inc);
                 }
             }
 
         } catch (org.xml.sax.SAXException e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero XML está malformado. Importación cancelada." + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero XML está malformado. Importación cancelada."
+                    + ColoresConsola.RESET);
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR al leer el fichero: " + e.getMessage() + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR al leer el fichero: " + e.getMessage() + ColoresConsola.RESET);
         }
     }
 
@@ -477,21 +537,18 @@ public class Inventario {
         return null;
     }
 
-    public void listarTodos() {
-        if (productos.isEmpty()) { // si esta vacio no debo mostrar nada mas que el aviso
-            System.out.println(ColoresConsola.AMARILLO + "El inventario esta vacio" + ColoresConsola.RESET);
-            return;
-        }
-
+    private void ordenarPorCodigo(List<Producto> productos2) {
         // ordeno por el metodo burbuja
-        int n = productos.size();
-        for (int i = 0; i < n - 1; i++) { // este for se encarga de repetir el proceso hasta que se culmine la ordenacion
+        int n = productos2.size();
+        for (int i = 0; i < n - 1; i++) { // este for se encarga de repetir el proceso hasta que se culmine la
+            // ordenacion
             for (int j = 0; j < n - i - 1; j++) { // este for nos ayuda a comparar a "vecinos" es decir de dos en dos
-                String c1 = productos.get(j).getCodigo();
+                String c1 = productos2.get(j).getCodigo();
                 // siempre seleccionamos el que este un puesto a la derecha del
-                String c2 = productos.get(j + 1).getCodigo();
+                String c2 = productos2.get(j + 1).getCodigo();
 
-                // tengo que tener cuidado ya que no puedo hacer un compare.ToIgnoraCase si uno de los dos es null
+                // tengo que tener cuidado ya que no puedo hacer un compare.ToIgnoraCase si uno
+                // de los dos es null
                 if (c1 == null) {
                     c1 = "";
                 }
@@ -501,14 +558,24 @@ public class Inventario {
 
                 // si el código actual es alfabeticamente mayor que el siguiente se intercambian
                 if (c1.compareToIgnoreCase(c2) > 0) {
-                    Producto temp = productos.get(j);
-                    productos.set(j, productos.get(j + 1));
-                    productos.set(j + 1, temp);
+                    Producto temp = productos2.get(j);
+                    productos2.set(j, productos2.get(j + 1));
+                    productos2.set(j + 1, temp);
                 }
 
             }
 
         }
+    }
+
+    public void listarTodos() {
+        if (productos.isEmpty()) { // si esta vacio no debo mostrar nada mas que el aviso
+            System.out.println(ColoresConsola.AMARILLO + "El inventario esta vacio" + ColoresConsola.RESET);
+            return;
+        }
+        // ordeno por codigo
+
+        ordenarPorCodigo(productos);
 
         System.out.println("---- LISTADO DE PRODUCTOS ----");
         for (int k = 0; k < productos.size(); k++) { // enseño todos los productos
@@ -526,7 +593,8 @@ public class Inventario {
         // en caso de que el codigo tenga algo entramos al for a comparar
         for (Producto producto : productos) {
             if (producto.getCodigo() != null) { // no puedo comparar si es null
-                if (producto.getCodigo().equals(codigo.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
+                if (producto.getCodigo().equals(codigo.trim())) { // comparamos codigos y en caso de que coincidan
+                    // enseño su info
                     System.out.println(producto.toString());
                 }
 
@@ -535,16 +603,17 @@ public class Inventario {
         }
     }
 
-    public void buscarPorNombre(String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el equalsIgnoreCase
+    public void buscarPorNombre(String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el
+        // equalsIgnoreCase
         if (nombre == null || nombre.trim().isEmpty()) {
             System.out.println(ColoresConsola.ROJO + "El nombre no puede estar vacio" + ColoresConsola.RESET);
             return;
         }
 
-        // en caso de que el codigo tenga algo entramos al for a comparar
+        // en caso de que el nombre tenga coincidencia entramos al for a comparar
         for (Producto producto : productos) {
-            if (producto.getCodigo() != null) { // no puedo comparar si es null
-                if (producto.getCodigo().equals(nombre.trim())) { // comparamos codigos y en caso de que coincidan enseño su info
+            if (producto.getNombre() != null) { // no puedo comparar si es null
+                if (producto.getNombre().toLowerCase().contains(nombre.toLowerCase())) {
                     System.out.println(producto.toString());
                 }
 
@@ -563,7 +632,8 @@ public class Inventario {
     public void exportarJson(String ruta) {
         // si no hay nada no exportamos
         if (productos.isEmpty()) {
-            System.out.println(ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
             return;
         }
 
@@ -573,7 +643,8 @@ public class Inventario {
             return;
         }
 
-        // creo una instancia de Gson configurada para aplicar formato legible (pretty printing)
+        // creo una instancia de Gson configurada para aplicar formato legible (pretty
+        // printing)
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         // try-with-resources para abrir y cerrar el writer de forma segura
@@ -582,10 +653,12 @@ public class Inventario {
             // convierto la lista de productos completa a texto JSON
             gson.toJson(productos, writer);
 
-            System.out.println(ColoresConsola.VERDE + "Catalogo exportado correctamente a JSON en: " + ruta + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.VERDE + "Catalogo exportado correctamente a JSON en: " + ruta
+                    + ColoresConsola.RESET);
 
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR al exportar a JSON: " + e.getMessage() + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR al exportar a JSON: " + e.getMessage() + ColoresConsola.RESET);
         }
 
     }
@@ -598,7 +671,8 @@ public class Inventario {
      */
     public void exportarXml(String ruta) {
         if (productos.isEmpty()) {
-            System.out.println(ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "El inventario está vacío. No hay nada que exportar." + ColoresConsola.RESET);
             return;
         }
 
@@ -642,14 +716,17 @@ public class Inventario {
                 root.appendChild(elemProducto);
             }
 
-            // uso el emtodo del repositorio para guardar toda la estrictura del cocumento creado
+            // uso el emtodo del repositorio para guardar toda la estrictura del cocumento
+            // creado
             Path pathDestino = Paths.get(ruta.trim());
             xmlRepository.guardar(doc, pathDestino);
 
-            System.out.println(ColoresConsola.VERDE + "Catálogo exportado correctamente a XML en: " + ruta + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.VERDE + "Catálogo exportado correctamente a XML en: " + ruta + ColoresConsola.RESET);
 
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR al exportar a XML: " + e.getMessage() + ColoresConsola.RESET);
+            System.out
+                    .println(ColoresConsola.ROJO + "ERROR al exportar a XML: " + e.getMessage() + ColoresConsola.RESET);
         }
     }
 
@@ -699,7 +776,8 @@ public class Inventario {
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ruta.trim()))) {
             oos.writeObject(productos);
-            System.out.println(ColoresConsola.VERDE + productos.size() + " productos serializados correctamente" + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.VERDE + productos.size() + " productos serializados correctamente"
+                    + ColoresConsola.RESET);
         } catch (Exception e) {
             System.out.println(ColoresConsola.ROJO + "ERROR a la hora de serializar los productos: " + e.getMessage()
                     + ColoresConsola.RESET);
@@ -719,6 +797,15 @@ public class Inventario {
             return; // no sigo
         }
 
+        // compruebo si existe
+        Path path = Paths.get(ruta.trim());
+        if (!Files.exists(path) || Files.isDirectory(path)) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
+            return;
+        }
+
+
+
         if (!productos.isEmpty()) {
             String confirmacion = LectorConsola.leerTexto(
                     "Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N");
@@ -735,32 +822,51 @@ public class Inventario {
             }
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ruta.trim()))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path.toFile()))) {
             // obtengo los productos
-            List<Producto> productosObtenidos = (List<Producto>) ois.readObject();
-            // creo una lista auxiliar
+            Object obtencion = ois.readObject();
+            List<?> productosObtenidos = new ArrayList<>();
+
+            // compruebo que sea una lista
+
+            if (obtencion instanceof List<?>) {
+                productosObtenidos = (List<?>) obtencion;
+            } else {
+                throw new IllegalArgumentException("La ruta devuelve un objeto que no es una lista");
+            }
+            // creo una lista auxiliar a la que añadire todos los productos en caso de que no haya errores
             List<Producto> listaAuxiliar = new ArrayList<>();
 
-            // si el producto cumple todo entonces va a mi lista auxiliar
-            for (Producto producto : productosObtenidos) {
-                if (validarProducto(producto).isEmpty()) {
-                    listaAuxiliar.add(producto);
+            // si el producto cumple todo entonces va a mi lista auxiliar, pero si uno no cumple los requisitos paramos todo el proceso (Todo o nada)
+            for (Object obj : productosObtenidos) {
+                if (obj instanceof Producto p) {
+                    if (validarProducto(p).isEmpty()) {
+                        listaAuxiliar.add(p);
+                    } else {
+                        throw new IllegalArgumentException("Error a la hora de validar un producto");
+                        // salgo
+                    }
+                } else {
+                    throw new IllegalArgumentException("Se encontro un objeto que no corresponde a un producto");
+                    // salgo
                 }
             }
 
-            // quito los que estaban anteriormente y añado los deserializados
+            // en caso de que salga todo todo bien vacio mi lista de productos y añado todos los que puse en mi auxiliar
+
             productos.clear();
             productos.addAll(listaAuxiliar);
-            System.out.println(ColoresConsola.VERDE + productos.size() + " productos obtenidos correctamente" + ColoresConsola.RESET);
+            System.out.println(ColoresConsola.VERDE + productos.size() + " productos obtenidos correctamente"
+                    + ColoresConsola.RESET);
 
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR a la hora de obtener los productos: " + e.getMessage()
+            System.out.println(ColoresConsola.ROJO + "ERROR: " + e.getMessage()
                     + ColoresConsola.RESET);
         }
 
     }
 
-    public void consultaXPath (String ruta) {
+    public void consultaXPath(String ruta) {
         // valido si la ruta recibida es nula o está vacía
         if (ruta == null || ruta.trim().isEmpty()) {
             System.out.println(ColoresConsola.ROJO + "ERROR: La ruta está vacía." + ColoresConsola.RESET);
@@ -770,7 +876,8 @@ public class Inventario {
         // compruebo existencia del fichero
         Path path = Paths.get(ruta.trim());
         if (!Files.exists(path) || Files.isDirectory(path)) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
             return;
         }
 
@@ -778,90 +885,253 @@ public class Inventario {
             // leo el documento
             Document doc = xmlRepository.leer(path);
 
-            // creo el evaluador: sabe construir motores XPath en Java y me devuelve el objeto listo para ejecutar expresiones sobre el doc
+            // creo el evaluador: sabe construir motores XPath en Java y me devuelve el
+            // objeto listo para ejecutar expresiones sobre el doc
             XPath xpath = XPathFactory.newInstance().newXPath();
 
             // muestro por pantalla las opciones y doy a elegir
             int opcion;
             do {
-            System.out.println("---- CONSULTAS XPATH ----");
-            System.out.println("Fichero: " + ruta.trim());
-            System.out.println("1. Por código | 2. Por categoría | 3. Precio superior | 4. Contar | 0. Volver");
+                System.out.println("---- CONSULTAS XPATH ----");
+                System.out.println("Fichero: " + ruta.trim());
+                System.out.println("1. Por código | 2. Por categoría | 3. Precio superior | 4. Contar | 0. Volver");
 
-            opcion = LectorConsola.leerOpcion("Opción: ", 0, 4);
+                opcion = LectorConsola.leerOpcion("Opción: ", 0, 4);
 
-            // 6. Usamos switch-case para gestionar cada consulta XPath
-            switch (opcion) {
-                case 1 -> {
-                    // busqueda por codigo seleccionando nodos para evitar inyección XPath
-                    String codBuscado = LectorConsola.leerTexto("Introduce el codigo: ");
-                    // .NODESET indica que espera una coleccion de nodos
-                    NodeList nodos = (NodeList) xpath.evaluate("/catalogo/producto", doc, XPathConstants.NODESET);
-                    int contador = 0;
+                // 6. Usamos switch-case para gestionar cada consulta XPath
+                switch (opcion) {
+                    case 1 -> {
+                        // busqueda por codigo seleccionando nodos para evitar inyección XPath
+                        String codBuscado = LectorConsola.leerTexto("Introduce el codigo: ");
+                        // .NODESET indica que espera una coleccion de nodos
+                        NodeList nodos = (NodeList) xpath.evaluate("/catalogo/producto", doc, XPathConstants.NODESET);
+                        int contador = 0;
 
-                    for (int i = 0; i < nodos.getLength(); i++) {
-                        Element elem = (Element) nodos.item(i);
-                        // 0 ya que el codigo es el primero
-                        String cod = elem.getElementsByTagName("codigo").item(0).getTextContent();
+                        for (int i = 0; i < nodos.getLength(); i++) {
+                            Element elem = (Element) nodos.item(i);
+                            // 0 ya que el codigo es el primero
+                            String cod = elem.getElementsByTagName("codigo").item(0).getTextContent();
 
-                        if (cod.equalsIgnoreCase(codBuscado.trim())) { // si es el mismo codigo imprimimos sus datos y sumamos al contador
-                            imprimirLineaProductoXml(elem);
-                            contador = contador + 1;
+                            if (cod.equalsIgnoreCase(codBuscado.trim())) { // si es el mismo codigo imprimimos sus datos
+                                // y sumamos al contador
+                                imprimirLineaProductoXml(elem);
+                                contador = contador + 1;
+                            }
                         }
+                        System.out.println("Productos encontrados: " + contador);
                     }
-                    System.out.println("Productos encontrados: " + contador);
-                }
-                case 2 -> {
-                    // Filtrar por categoría usando expresión XPath con predicado [categoriaId=X]
-                    int catId = LectorConsola.leerEntero("ID Categoria: ");
-                    String expresion = "/catalogo/producto[categoriaId=" + catId + "]";
-                    NodeList nodos = (NodeList) xpath.evaluate(expresion, doc, XPathConstants.NODESET);
+                    case 2 -> {
+                        // Filtrar por categoría usando expresión XPath con predicado [categoriaId=X]
+                        int catId = LectorConsola.leerEntero("ID Categoria: ");
+                        String expresion = "/catalogo/producto[categoriaId=" + catId + "]";
+                        NodeList nodos = (NodeList) xpath.evaluate(expresion, doc, XPathConstants.NODESET);
 
-                    for (int i = 0; i < nodos.getLength(); i++) {
-                        imprimirLineaProductoXml((Element) nodos.item(i));
+                        for (int i = 0; i < nodos.getLength(); i++) {
+                            imprimirLineaProductoXml((Element) nodos.item(i));
+                        }
+                        System.out.println("Productos encontrados: " + nodos.getLength());
                     }
-                    System.out.println("Productos encontrados: " + nodos.getLength());
-                }
-                case 3 -> {
-                    // Filtrar por precio superior a un valor numérico [precio > X]
-                    double precioMin = LectorConsola.leerDouble("Precio mínimo: ");
-                    String expresion = "/catalogo/producto[precio > " + precioMin + "]";
-                    NodeList nodos = (NodeList) xpath.evaluate(expresion, doc, XPathConstants.NODESET);
+                    case 3 -> {
+                        // Filtrar por precio superior a un valor numérico [precio > X]
+                        double precioMin = LectorConsola.leerDouble("Precio mínimo: ");
+                        String expresion = "/catalogo/producto[precio > " + precioMin + "]";
+                        NodeList nodos = (NodeList) xpath.evaluate(expresion, doc, XPathConstants.NODESET);
 
-                    for (int i = 0; i < nodos.getLength(); i++) {
-                        imprimirLineaProductoXml((Element) nodos.item(i));
+                        for (int i = 0; i < nodos.getLength(); i++) {
+                            imprimirLineaProductoXml((Element) nodos.item(i));
+                        }
+                        System.out.println("Productos encontrados: " + nodos.getLength());
                     }
-                    System.out.println("Productos encontrados: " + nodos.getLength());
+                    case 4 -> {
+                        // Contar nodos <producto> mediante la función de agregación count()
+                        Double total = (Double) xpath.evaluate("count(/catalogo/producto)", doc, XPathConstants.NUMBER);
+                        System.out.println("Productos encontrados: " + total.intValue());
+                    }
+                    case 0 ->
+                        System.out
+                                .println(ColoresConsola.VERDE + "Saliendo de la consulta XPath..." + ColoresConsola.RESET);
+                    default ->
+                        throw new IllegalStateException("Opción inesperada: " + opcion);
                 }
-                case 4 -> {
-                    // Contar nodos <producto> mediante la función de agregación count()
-                    Double total = (Double) xpath.evaluate("count(/catalogo/producto)", doc, XPathConstants.NUMBER);
-                    System.out.println("Productos encontrados: " + total.intValue());
-                }
-                case 0 -> System.out.println(ColoresConsola.VERDE + "Saliendo de la consulta XPath..." + ColoresConsola.RESET);
-                default -> throw new IllegalStateException("Opción inesperada: " + opcion);
-            }
 
-        } while (opcion != 0);
-            
-            
+            } while (opcion != 0);
+
         } catch (Exception e) {
-            System.out.println(ColoresConsola.ROJO + "ERROR en la consulta XPath: " + e.getMessage() + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR en la consulta XPath: " + e.getMessage() + ColoresConsola.RESET);
         }
 
-        
     }
 
     /**
- * metodo auxiliar para mostrar los datos de un nodo <producto> en el formato de ejemplo de ejecucion
- * 
+     * metodo auxiliar para mostrar los datos de un nodo <producto> en el
+     * formato de ejemplo de ejecucion
+     *
+     */
+    private void imprimirLineaProductoXml(Element elem) {
+        String cod = elem.getElementsByTagName("codigo").item(0).getTextContent();
+        String nom = elem.getElementsByTagName("nombre").item(0).getTextContent();
+        String precio = elem.getElementsByTagName("precio").item(0).getTextContent();
+
+        System.out.println(cod + "   " + nom + "   " + precio + " €");
+    }
+
+    /**
+     * Metodo para la generacion del fichero stock.pin a partir de la copia en memoria (ordenada por codigo)
+     * @param ruta
+     */
+    public void generarStockBinario(String ruta) {
+    // compruebo si el inventario de la lista esta vacio
+    if (productos.isEmpty()) {
+        System.out.println(ColoresConsola.ROJO + "El inventario esta vacio no se generara el fichero" + ColoresConsola.RESET);
+        return;
+    }
+
+    // pido confirmacion al usuario antes de sobrescribir el archivo
+    String confirmacion = LectorConsola.leerTexto("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ");
+    if (confirmacion == null || !LectorConsola.confirmar(confirmacion)) {
+        System.out.println(ColoresConsola.VERDE + "Operación cancelada por el usuario." + ColoresConsola.RESET);
+        return;
+    }
+
+    // creo la copia independiente de los productos en memoria y la ordeno por codigo
+    List<Producto> copiaOrdenada = new ArrayList<>(productos);
+    ordenarPorCodigo(copiaOrdenada);
+
+    try {
+        Path path = Paths.get(ruta.trim());
+        // aseguro que la carpeta contenedora exista (en este caso es datos)
+        if (path.getParent() != null) {
+            Files.createDirectories(path.getParent()); // en caso de que no exista /datos
+        }
+
+        // abro el fichero en modo lectura/escritura y trunco el contenido previo a 0 bytes
+        try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
+            raf.setLength(0);
+
+            // recorro la copia para escribir los registros con longitud fija de 36 bytes
+            for (Producto p : copiaOrdenada) {
+                // obtengo y limpio el codigo
+                String codigoFijo = "";
+                if (p.getCodigo() != null) {
+                    codigoFijo = p.getCodigo().trim();
+                }
+
+                // ajusto el codigo a exactamente 12 caracteres rellenando con espacios
+                if (codigoFijo.length() > 12) {
+                    codigoFijo = codigoFijo.substring(0, 12);
+                } else {
+                    while (codigoFijo.length() < 12) {
+                        codigoFijo = codigoFijo + " ";
+                    }
+                }
+                raf.writeChars(codigoFijo); // 12 chars = 24 bytes
+
+                // extraigo el precio convirtiendolo a double
+                double precioDouble = 0.0;
+                if (p.getPrecio() != null) {
+                    precioDouble = p.getPrecio().doubleValue();
+                }
+                raf.writeDouble(precioDouble); // 8 bytes
+
+                // escribo el stock como entero
+                raf.writeInt(p.getStock()); // 4 bytes
+            }
+
+            System.out.println(ColoresConsola.VERDE + "Fichero " + ruta.trim() + " generado con éxito (" 
+                    + copiaOrdenada.size() + " registros, " + raf.length() + " bytes)." + ColoresConsola.RESET);
+        }
+
+    } catch (Exception e) {
+        System.out.println(ColoresConsola.ROJO + "ERROR al generar stock.bin: " + e.getMessage() + ColoresConsola.RESET);
+    }
+}
+
+/**
+ * Metodo para gestionar un registro en el fichero binario con seek
+ * @param ruta
  */
-private void imprimirLineaProductoXml(Element elem) {
-    String cod = elem.getElementsByTagName("codigo").item(0).getTextContent();
-    String nom = elem.getElementsByTagName("nombre").item(0).getTextContent();
-    String precio = elem.getElementsByTagName("precio").item(0).getTextContent();
-    
-    System.out.println(cod + "   " + nom + "   " + precio + " €");
+public void gestionarAccesoAleatorioStock(String ruta) {
+    // valido que la ruta recibida no sea nula ni este vacia
+    if (ruta == null || ruta.trim().isEmpty()) {
+        System.out.println(ColoresConsola.ROJO + "La ruta no puede estar vacía." + ColoresConsola.RESET);
+        return;
+    }
+
+    //  el fichero ha de existir
+    Path path = Paths.get(ruta.trim());
+    if (!Files.exists(path) || Files.isDirectory(path)) {
+        System.out.println(ColoresConsola.ROJO + "ERROR: El fichero binario no existe." + ColoresConsola.RESET);
+        return;
+    }
+
+    // abro el fichero en modo lectura y escritura
+    try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
+        long tamanoTotal = raf.length();
+
+        // valido que no este vacio y que sea múltiplo del tamaño de registro (36 bytes)
+        if (tamanoTotal == 0 || tamanoTotal % 36 != 0) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero esta vacio o su tamaño (" + tamanoTotal
+                    + " bytes) no es multiplo de 36." + ColoresConsola.RESET);
+            return;
+        }
+
+        // calculo la cantidad total de registros en disco
+        long totalRegistros = tamanoTotal / 36;
+
+        System.out.println("---- ACCESO ALEATORIO ----");
+        System.out.println("Fichero: " + ruta.trim());
+        System.out.println("Registros: " + totalRegistros + " | Tamaño: " + tamanoTotal + " bytes");
+
+        // solicito la posicion validando directamente el rango valido
+        int pos = LectorConsola.leerOpcion("Consultar posición (0-" + (totalRegistros - 1) + "): ", 0,
+                (int) (totalRegistros - 1));
+
+        // calculo el desplazamiento directo al inicio del registro
+        long desplazamientoRegistro = (long) pos * 36;
+
+        // me posiciono con el puntero al inicio del registro seleccionado
+        raf.seek(desplazamientoRegistro);
+
+        // leo los 12 caracteres correspondientes al codigo
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 12; i++) {
+            sb.append(raf.readChar());
+        }
+        String codigo = sb.toString().trim();
+
+        // obtengo el precio y el stock antiguo guardado en el fichero
+        double precio = raf.readDouble();
+        int stockAntiguo = raf.readInt();
+
+        // muestro la informacion del registro leido
+        System.out.println(codigo + " | " + precio + " € | stock " + stockAntiguo);
+
+        // solicito el nuevo valor del stock
+        int nuevoStock = LectorConsola.leerEntero("Nuevo stock: ");
+
+        // valido que no se introduzca un stock negativo
+        if (nuevoStock < 0) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El stock no puede ser un número negativo."
+                    + ColoresConsola.RESET);
+            return;
+        }
+
+        // calculo el desplazamiento directo hacia el campo stock (posicion * 36 + 32)
+        long desplazamientoStock = desplazamientoRegistro + 32;
+
+        // desplazo el puntero directamente al campo del entero sin reescribir la linea completa
+        raf.seek(desplazamientoStock);
+
+        // sobrescribo los 4 bytes del entero stock en el fichero
+        raf.writeInt(nuevoStock);
+
+        // muestro la confirmacion del cambio realizado
+        System.out.println("Actualización correcta: stock " + stockAntiguo + " -> " + nuevoStock);
+
+    } catch (Exception e) {
+        System.out.println(ColoresConsola.ROJO + "ERROR: " + e.getMessage() + ColoresConsola.RESET);
+    }
 }
 
 }
