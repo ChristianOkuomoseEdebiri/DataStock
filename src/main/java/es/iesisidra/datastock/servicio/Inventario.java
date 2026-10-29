@@ -49,13 +49,12 @@ import es.iesisidra.datastock.util.LectorConsola;
 public class Inventario {
 
     private final List<Producto> productos = new ArrayList<>();
+    // Instancia reutilizable del repositorio
+    private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
 
     /**
      * Obtiene la colección que comparten las opciones del menú.
-     * <p>
-     * ATENCIÓN: la lista es modificable. El alumnado deberá aplicar las reglas
-     * del enunciado antes de añadir o sustituir elementos.
-     * </p>
+     *
      */
     public List<Producto> getProductos() {
         return productos;
@@ -65,7 +64,7 @@ public class Inventario {
      * metodo explorarRuta que nos permite ver toda la informacion subyacente de
      * una ruta dada por el usuario
      *
-     * @param ruta
+     * @param ruta la ruta que se va a explorar
      */
     public void explorarRuta(String ruta) {
 
@@ -140,8 +139,8 @@ public class Inventario {
      * Valida un producto según las reglas dadas Devuelve una lista de errores,
      * si esta vacia: el producto es valido
      *
-     * @param p
-     * @return
+     * @param p el producto que pasa por las validaciones
+     * @return una lista con los errores
      */
     private List<String> validarProducto(Producto p, List<Producto> listaReferencia) {
         List<String> errores = new ArrayList<>();
@@ -161,9 +160,10 @@ public class Inventario {
             // hay que comprobar si existe en memoria
             boolean duplicado = false;
             int i = 0; // para recorrer todos los productos
-            while (i < productos.size() && !duplicado) { // mientras no tenga mas posiciones de procutos que recorrer y
+            while (i < listaReferencia.size() && !duplicado) { // mientras no tenga mas posiciones de procutos que
+                                                               // recorrer y
                 // no haya encontradado un duplicado
-                Producto prod = productos.get(i);
+                Producto prod = listaReferencia.get(i);
                 if (prod.getCodigo() != null && prod.getCodigo().equalsIgnoreCase(codigoLimpio)) {
                     duplicado = true;
 
@@ -178,7 +178,7 @@ public class Inventario {
         }
 
         // 2. Comprobaciones del nombre
-        if (p.getNombre() == null || p.getNombre().trim().length() < 3 || p.getNombre().length() > 100) {
+        if (p.getNombre() == null || p.getNombre().trim().length() < 3 || p.getNombre().trim().length() > 100) {
             errores.add("El nombre debe tener entre 3 y 100 caracteres además de no poder estar vacio");
         }
 
@@ -287,7 +287,7 @@ public class Inventario {
                     }
 
                     // validamos las reglas predefinidas antes
-                    List<String> errores = validarProducto(p, this.productos);
+                    List<String> errores = validarProducto(p, productos);
 
                     // si esta vacio no hay errores
                     if (errores.isEmpty()) {
@@ -353,15 +353,12 @@ public class Inventario {
         }
     }
 
-    // Instancia reutilizable del repositorio
-    private ProductoXmlRepository xmlRepository = new ProductoXmlRepository();
-
     /**
      * Importa un catálogo de productos desde un fichero XML usando DOM. Lee el
      * fichero con el repositorio y valida los campos añade solo los registros
      * válidos al inventario.
      *
-     * @param ruta
+     * @param ruta la ruta de donde se importa el xml
      */
     public void importarXml(String ruta) {
         // 1. Validar si la ruta recibida es nula o está vacía
@@ -382,10 +379,22 @@ public class Inventario {
             // 3. Cargar el árbol de nodos DOM a través del repositorio seguro
             Document doc = xmlRepository.leer(path);
 
+            // no puede estar vacio y la razi debe de ser catalogo
+
+            if (doc.getDocumentElement() == null
+                    || !"catalogo".equals(
+                            doc.getDocumentElement().getTagName())) {
+
+                System.out.println(
+                        ColoresConsola.ROJO
+                                + "ERROR: La raíz del XML debe ser <catalogo>."
+                                + ColoresConsola.RESET);
+                return;
+            }
+
             // Obtenemos todos los elementos con la etiqueta <producto>
             NodeList listaNodos = doc.getElementsByTagName("producto");
             int encontrados = listaNodos.getLength();
-
             int importados = 0;
             int rechazados = 0;
             List<String> incidencias = new ArrayList<>();
@@ -533,7 +542,7 @@ public class Inventario {
                 return nodo.getTextContent().trim();
             }
         }
-        // si la ertiqueta no existia o estaba vacioa
+        // si la etiqueta no existia o estaba vacia
         return null;
     }
 
@@ -568,21 +577,32 @@ public class Inventario {
         }
     }
 
+    /**
+     * Metodo para listar todos los productos ordenados por codigo
+     */
+
     public void listarTodos() {
         if (productos.isEmpty()) { // si esta vacio no debo mostrar nada mas que el aviso
             System.out.println(ColoresConsola.AMARILLO + "El inventario esta vacio" + ColoresConsola.RESET);
             return;
         }
         // ordeno por codigo
-
-        ordenarPorCodigo(productos);
+        // copiamos los productos antes de ordenarlos para lo alterar el orden.
+        List<Producto> copiaOrdenada = new ArrayList<>(productos);
+        ordenarPorCodigo(copiaOrdenada);
 
         System.out.println("---- LISTADO DE PRODUCTOS ----");
-        for (int k = 0; k < productos.size(); k++) { // enseño todos los productos
-            System.out.println(productos.get(k).toString());
+        for (int k = 0; k < copiaOrdenada.size(); k++) { // enseño todos los productos
+            System.out.println(copiaOrdenada.get(k).toString());
 
         }
     }
+
+    /**
+     * Metodo para buscar un producto en base al codigo
+     *
+     * @param codigo el codigo a buscar
+     */
 
     public void buscarPorCodigo(String codigo) {
         if (codigo == null || codigo.trim().isEmpty()) {
@@ -590,35 +610,54 @@ public class Inventario {
             return;
         }
 
+        boolean encontrado = false;
+
         // en caso de que el codigo tenga algo entramos al for a comparar
         for (Producto producto : productos) {
             if (producto.getCodigo() != null) { // no puedo comparar si es null
-                if (producto.getCodigo().equals(codigo.trim())) { // comparamos codigos y en caso de que coincidan
+                if (producto.getCodigo().equalsIgnoreCase(codigo.trim())) { // comparamos codigos y en caso de que
+                                                                            // coincidan
                     // enseño su info
                     System.out.println(producto.toString());
+                    encontrado = true;
                 }
 
             }
 
         }
+
+        if (!encontrado) {
+            System.out.println(ColoresConsola.AMARILLO + "No se ha encontrado nada" + ColoresConsola.RESET);
+        }
     }
 
-    public void buscarPorNombre(String nombre) { // el codigo es practicamente igual solo que aqui si aplicamos el
-        // equalsIgnoreCase
+    /**
+     * Metodo para encontrar coincidencias en base al nombre introducido
+     *
+     * @param nombre el nombre a buscar
+     */
+
+    public void buscarPorNombre(String nombre) {
         if (nombre == null || nombre.trim().isEmpty()) {
             System.out.println(ColoresConsola.ROJO + "El nombre no puede estar vacio" + ColoresConsola.RESET);
             return;
         }
+        boolean encontrado = false;
 
         // en caso de que el nombre tenga coincidencia entramos al for a comparar
         for (Producto producto : productos) {
             if (producto.getNombre() != null) { // no puedo comparar si es null
-                if (producto.getNombre().toLowerCase().contains(nombre.toLowerCase())) {
+                if (producto.getNombre().toLowerCase().contains(nombre.toLowerCase().trim())) {
                     System.out.println(producto.toString());
+                    encontrado = true;
                 }
 
             }
 
+        }
+
+        if (!encontrado) {
+            System.out.println(ColoresConsola.AMARILLO + "No se ha encontrado nada" + ColoresConsola.RESET);
         }
 
     }
@@ -643,6 +682,30 @@ public class Inventario {
             return;
         }
 
+        File archivo = new File(ruta.trim());
+
+        // no debe ser un directorio
+        if (archivo.isDirectory()) {
+            System.out.println("ERROR: La ruta corresponde a un directorio.");
+            return;
+        }
+
+        // pido confirmacion antes que cualquier cosa (en el caso de que exista)
+
+        if (archivo.exists() && !LectorConsola.confirmar("Seguro que quieres sobrescribir: " + ruta.trim())) {
+            System.out.println(
+                    ColoresConsola.VERDE + "Cancelacion recibida saliendo correctamente" + ColoresConsola.RESET);
+            return;
+        }
+
+        // ordeno los productos sin modificar el inventario
+        List<Producto> copiaOrdenada = new ArrayList<>(productos);
+        ordenarPorCodigo(copiaOrdenada);
+
+        // Construyo el objeto raiz que espera importarJSON
+        JsonObject raiz = new JsonObject();
+        raiz.add("productos", new Gson().toJsonTree(copiaOrdenada));
+
         // creo una instancia de Gson configurada para aplicar formato legible (pretty
         // printing)
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -651,7 +714,7 @@ public class Inventario {
         try (FileWriter writer = new FileWriter(ruta.trim())) {
 
             // convierto la lista de productos completa a texto JSON
-            gson.toJson(productos, writer);
+            gson.toJson(raiz, writer);
 
             System.out.println(ColoresConsola.VERDE + "Catalogo exportado correctamente a JSON en: " + ruta
                     + ColoresConsola.RESET);
@@ -681,6 +744,22 @@ public class Inventario {
             return;
         }
 
+        File archivo = new File(ruta.trim());
+
+        // no debe ser un directorio
+        if (archivo.isDirectory()) {
+            System.out.println("ERROR: La ruta corresponde a un directorio.");
+            return;
+        }
+
+        // pido confirmacion antes que cualquier cosa (en el caso de que exista)
+
+        if (archivo.exists() && !LectorConsola.confirmar("Seguro que quieres sobrescribir: " + ruta.trim())) {
+            System.out.println(
+                    ColoresConsola.VERDE + "Cancelacion recibida saliendo correctamente" + ColoresConsola.RESET);
+            return;
+        }
+
         try {
             // Inicializo un nuevo documento DOM en blanco
             DocumentBuilder builder = XmlConfig.domFactory().newDocumentBuilder();
@@ -690,9 +769,15 @@ public class Inventario {
             Element root = doc.createElement("catalogo");
             doc.appendChild(root);
 
+            int contador = 0;
+
+            // ordeno los productos sin modificar el inventario
+            List<Producto> copiaOrdenada = new ArrayList<>(productos);
+            ordenarPorCodigo(copiaOrdenada);
+
             // Recorro para incluir todos los productos
-            for (int i = 0; i < productos.size(); i++) {
-                Producto p = productos.get(i);
+            for (int i = 0; i < copiaOrdenada.size(); i++) {
+                Producto p = copiaOrdenada.get(i);
 
                 // creo la etiqueta del nodo producto
                 Element elemProducto = doc.createElement("producto");
@@ -714,14 +799,16 @@ public class Inventario {
 
                 // pongo cada producto en el catalogo
                 root.appendChild(elemProducto);
+                contador++; //si llega hasta aqui se suma
+
             }
 
-            // uso el metodo del repositorio para guardar toda la estrictura del documento creado
+            // uso el metodo del repositorio para guardar toda la estructura del documento creado
             Path pathDestino = Paths.get(ruta.trim());
             xmlRepository.guardar(doc, pathDestino);
 
             System.out.println(
-                    ColoresConsola.VERDE + "Catálogo exportado correctamente a XML en: " + ruta + ColoresConsola.RESET);
+                    ColoresConsola.VERDE + "Catálogo exportado correctamente a XML en: " + ruta +  " numero de productos exportados: " + contador +  ColoresConsola.RESET);
 
         } catch (Exception e) {
             System.out
@@ -759,7 +846,6 @@ public class Inventario {
             return;
         }
 
-
         // si es false no sigo
         if (!LectorConsola.confirmar("Todo preparado para la serializacion confirmacion: S/N")) {
             System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
@@ -792,19 +878,16 @@ public class Inventario {
         // compruebo si existe
         Path path = Paths.get(ruta.trim());
         if (!Files.exists(path) || Files.isDirectory(path)) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR: El fichero no existe o es un directorio." + ColoresConsola.RESET);
             return;
         }
 
-
-
-        if (!productos.isEmpty()) {
-
-            // si es false no sigo
-            if (!LectorConsola.confirmar("Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N")) {
-                System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
-                return;
-            }
+        // si es false no sigo
+        if (!LectorConsola.confirmar(
+                "Todo preparado para la deserializacion confirmacion para sustituir los productos en memoria: S/N")) {
+            System.out.println(ColoresConsola.VERDE + "NEGACION RECIBIDA SALIENDO..." + ColoresConsola.RESET);
+            return;
         }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path.toFile()))) {
@@ -819,10 +902,12 @@ public class Inventario {
             } else {
                 throw new IllegalArgumentException("La ruta devuelve un objeto que no es una lista");
             }
-            // creo una lista auxiliar a la que añadire todos los productos en caso de que no haya errores
+            // creo una lista auxiliar a la que añadire todos los productos en caso de que
+            // no haya errores
             List<Producto> listaAuxiliar = new ArrayList<>();
 
-            // si el producto cumple todo entonces va a mi lista auxiliar, pero si uno no cumple los requisitos paramos todo el proceso (Todo o nada)
+            // si el producto cumple todo entonces va a mi lista auxiliar, pero si uno no
+            // cumple los requisitos paramos todo el proceso (Todo o nada)
             for (Object obj : productosObtenidos) {
                 if (obj instanceof Producto p) {
                     if (validarProducto(p, listaAuxiliar).isEmpty()) {
@@ -837,7 +922,8 @@ public class Inventario {
                 }
             }
 
-            // en caso de que salga todo todo bien vacio mi lista de productos y añado todos los que puse en mi auxiliar
+            // en caso de que salga todo todo bien vacio mi lista de productos y añado todos
+            // los que puse en mi auxiliar
 
             productos.clear();
             productos.addAll(listaAuxiliar);
@@ -850,6 +936,11 @@ public class Inventario {
         }
 
     }
+
+    /**
+     * Metodo para realizar consultas XML mediante XPath
+     * @param ruta donde esta el documento XML
+     */
 
     public void consultaXPath(String ruta) {
         // valido si la ruta recibida es nula o está vacía
@@ -934,7 +1025,8 @@ public class Inventario {
                     }
                     case 0 ->
                         System.out
-                                .println(ColoresConsola.VERDE + "Saliendo de la consulta XPath..." + ColoresConsola.RESET);
+                                .println(ColoresConsola.VERDE + "Saliendo de la consulta XPath..."
+                                        + ColoresConsola.RESET);
                     default ->
                         throw new IllegalStateException("Opción inesperada: " + opcion);
                 }
@@ -958,165 +1050,179 @@ public class Inventario {
         String nom = elem.getElementsByTagName("nombre").item(0).getTextContent();
         String precio = elem.getElementsByTagName("precio").item(0).getTextContent();
 
-        System.out.println(cod + "   " + nom + "   " + precio + "   euros"); // el simbolo de euro por consola sale como interrogacion
+        System.out.println(cod + "   " + nom + "   " + precio + "   euros"); // el simbolo de euro por consola sale como
+                                                                             // interrogacion
     }
 
     /**
-     * Metodo para la generacion del fichero stock.pin a partir de la copia en memoria (ordenada por codigo)
+     * Metodo para la generacion del fichero stock.pin a partir de la copia en
+     * memoria (ordenada por codigo)
+     * 
      * @param ruta
      */
     public void generarStockBinario(String ruta) {
-    // compruebo si el inventario de la lista esta vacio
-    if (productos.isEmpty()) {
-        System.out.println(ColoresConsola.ROJO + "El inventario esta vacio no se generara el fichero" + ColoresConsola.RESET);
-        return;
-    }
-
-    // pido confirmacion al usuario antes de sobrescribir el archivo
-    String confirmacion = LectorConsola.leerTexto("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ");
-    if (!LectorConsola.confirmar("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ")) {
-        System.out.println(ColoresConsola.VERDE + "Operación cancelada por el usuario." + ColoresConsola.RESET);
-        return;
-    }
-
-    // creo la copia independiente de los productos en memoria y la ordeno por codigo
-    List<Producto> copiaOrdenada = new ArrayList<>(productos);
-    ordenarPorCodigo(copiaOrdenada);
-
-    try {
-        Path path = Paths.get(ruta.trim());
-        // aseguro que la carpeta contenedora exista (en este caso es datos)
-        if (path.getParent() != null) {
-            Files.createDirectories(path.getParent()); // en caso de que no exista /datos
+        // compruebo si el inventario de la lista esta vacio
+        if (productos.isEmpty()) {
+            System.out.println(
+                    ColoresConsola.ROJO + "El inventario esta vacio no se generara el fichero" + ColoresConsola.RESET);
+            return;
         }
 
-        // abro el fichero en modo lectura/escritura y trunco el contenido previo a 0 bytes
-        try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
-            raf.setLength(0);
+        if (ruta == null || ruta.isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "La ruta esta vacia" + ColoresConsola.RESET);
+            return;
+        }
 
-            // recorro la copia para escribir los registros con longitud fija de 36 bytes
-            for (Producto p : copiaOrdenada) {
-                // obtengo y limpio el codigo
-                String codigoFijo = "";
-                if (p.getCodigo() != null) {
-                    codigoFijo = p.getCodigo().trim();
-                }
+        // pido confirmacion al usuario antes de sobrescribir el archivo
+        if (!LectorConsola
+                .confirmar("Se va a generar/sobrescribir el fichero '" + ruta.trim() + "'. ¿Confirmar? (S/N): ")) {
+            System.out.println(ColoresConsola.VERDE + "Operación cancelada por el usuario." + ColoresConsola.RESET);
+            return;
+        }
 
-                // ajusto el codigo a exactamente 12 caracteres rellenando con espacios
-                if (codigoFijo.length() > 12) {
-                    codigoFijo = codigoFijo.substring(0, 12);
-                } else {
-                    while (codigoFijo.length() < 12) {
-                        codigoFijo = codigoFijo + " ";
-                    }
-                }
-                raf.writeChars(codigoFijo); // 12 chars = 24 bytes
+        // creo la copia independiente de los productos en memoria y la ordeno por
+        // codigo
+        List<Producto> copiaOrdenada = new ArrayList<>(productos);
+        ordenarPorCodigo(copiaOrdenada);
 
-                // extraigo el precio convirtiendolo a double
-                double precioDouble = 0.0;
-                if (p.getPrecio() != null) {
-                    precioDouble = p.getPrecio().doubleValue();
-                }
-                raf.writeDouble(precioDouble); // 8 bytes
-
-                // escribo el stock como entero
-                raf.writeInt(p.getStock()); // 4 bytes
+        try {
+            Path path = Paths.get(ruta.trim());
+            // aseguro que la carpeta contenedora exista (en este caso es datos)
+            if (path.getParent() != null) {
+                Files.createDirectories(path.getParent()); // en caso de que no exista /datos
             }
 
-            System.out.println(ColoresConsola.VERDE + "Fichero " + ruta.trim() + " generado con éxito (" 
-                    + copiaOrdenada.size() + " registros, " + raf.length() + " bytes)." + ColoresConsola.RESET);
+            // abro el fichero en modo lectura/escritura y trunco el contenido previo a 0
+            // bytes
+            try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
+                raf.setLength(0);
+
+                // recorro la copia para escribir los registros con longitud fija de 36 bytes
+                for (Producto p : copiaOrdenada) {
+                    // obtengo y limpio el codigo
+                    String codigoFijo = "";
+                    if (p.getCodigo() != null) {
+                        codigoFijo = p.getCodigo().trim();
+                    }
+
+                    // ajusto el codigo a exactamente 12 caracteres rellenando con espacios
+                    if (codigoFijo.length() > 12) {
+                        codigoFijo = codigoFijo.substring(0, 12);
+                    } else {
+                        while (codigoFijo.length() < 12) {
+                            codigoFijo = codigoFijo + " ";
+                        }
+                    }
+                    raf.writeChars(codigoFijo); // 12 chars = 24 bytes
+
+                    // extraigo el precio convirtiendolo a double
+                    double precioDouble = 0.0;
+                    if (p.getPrecio() != null) {
+                        precioDouble = p.getPrecio().doubleValue();
+                    }
+                    raf.writeDouble(precioDouble); // 8 bytes
+
+                    // escribo el stock como entero
+                    raf.writeInt(p.getStock()); // 4 bytes
+                }
+
+                System.out.println(ColoresConsola.VERDE + "Fichero " + ruta.trim() + " generado con éxito ("
+                        + copiaOrdenada.size() + " registros, " + raf.length() + " bytes)." + ColoresConsola.RESET);
+            }
+
+        } catch (Exception e) {
+            System.out.println(
+                    ColoresConsola.ROJO + "ERROR al generar stock.bin: " + e.getMessage() + ColoresConsola.RESET);
         }
-
-    } catch (Exception e) {
-        System.out.println(ColoresConsola.ROJO + "ERROR al generar stock.bin: " + e.getMessage() + ColoresConsola.RESET);
-    }
-}
-
-/**
- * Metodo para gestionar un registro en el fichero binario con seek
- * @param ruta 
- */
-public void gestionarAccesoAleatorioStock(String ruta) {
-    // valido que la ruta recibida no sea nula ni este vacia
-    if (ruta == null || ruta.trim().isEmpty()) {
-        System.out.println(ColoresConsola.ROJO + "La ruta no puede estar vacía." + ColoresConsola.RESET);
-        return;
     }
 
-    //  el fichero ha de existir
-    Path path = Paths.get(ruta.trim());
-    if (!Files.exists(path) || Files.isDirectory(path)) {
-        System.out.println(ColoresConsola.ROJO + "ERROR: El fichero binario no existe." + ColoresConsola.RESET);
-        return;
-    }
-
-    // abro el fichero en modo lectura y escritura
-    try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
-        long tamanoTotal = raf.length();
-
-        // valido que no este vacio y que sea múltiplo del tamaño de registro (36 bytes)
-        if (tamanoTotal == 0 || tamanoTotal % 36 != 0) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero esta vacio o su tamaño (" + tamanoTotal
-                    + " bytes) no es multiplo de 36." + ColoresConsola.RESET);
+    /**
+     * Metodo para gestionar un registro en el fichero binario con seek
+     * 
+     * @param ruta el fichero que se abre en modo lectura y escritura
+     */
+    public void gestionarAccesoAleatorioStock(String ruta) {
+        // valido que la ruta recibida no sea nula ni este vacia
+        if (ruta == null || ruta.trim().isEmpty()) {
+            System.out.println(ColoresConsola.ROJO + "La ruta no puede estar vacía." + ColoresConsola.RESET);
             return;
         }
 
-        // calculo la cantidad total de registros en disco
-        long totalRegistros = tamanoTotal / 36;
-
-        System.out.println("---- ACCESO ALEATORIO ----");
-        System.out.println("Fichero: " + ruta.trim());
-        System.out.println("Registros: " + totalRegistros + " | Tamaño: " + tamanoTotal + " bytes");
-
-        // solicito la posicion validando directamente el rango valido
-        int pos = LectorConsola.leerOpcion("Consultar posición (0-" + (totalRegistros - 1) + "): ", 0,
-                (int) (totalRegistros - 1));
-
-        // calculo el desplazamiento directo al inicio del registro
-        long desplazamientoRegistro = (long) pos * 36;
-
-        // me posiciono con el puntero al inicio del registro seleccionado
-        raf.seek(desplazamientoRegistro);
-
-        // leo los 12 caracteres correspondientes al codigo
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 12; i++) {
-            sb.append(raf.readChar());
-        }
-        String codigo = sb.toString().trim();
-
-        // obtengo el precio y el stock antiguo guardado en el fichero
-        double precio = raf.readDouble();
-        int stockAntiguo = raf.readInt();
-
-        // muestro la informacion del registro leido
-        System.out.println(codigo + " | " + precio + " euros | stock " + stockAntiguo);
-
-        // solicito el nuevo valor del stock
-        int nuevoStock = LectorConsola.leerEntero("Nuevo stock: ");
-
-        // valido que no se introduzca un stock negativo
-        if (nuevoStock < 0) {
-            System.out.println(ColoresConsola.ROJO + "ERROR: El stock no puede ser un número negativo."
-                    + ColoresConsola.RESET);
+        // el fichero ha de existir
+        Path path = Paths.get(ruta.trim());
+        if (!Files.exists(path) || Files.isDirectory(path)) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: El fichero binario no existe." + ColoresConsola.RESET);
             return;
         }
 
-        // calculo el desplazamiento directo hacia el campo stock (posicion * 36 + 32)
-        long desplazamientoStock = desplazamientoRegistro + 32;
+        // abro el fichero en modo lectura y escritura
+        try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "rw")) {
+            long tamanoTotal = raf.length();
 
-        // desplazo el puntero directamente al campo del entero sin reescribir la linea completa
-        raf.seek(desplazamientoStock);
+            // valido que no este vacio y que sea múltiplo del tamaño de registro (36 bytes)
+            if (tamanoTotal == 0 || tamanoTotal % 36 != 0) {
+                System.out.println(ColoresConsola.ROJO + "ERROR: El fichero esta vacio o su tamaño (" + tamanoTotal
+                        + " bytes) no es multiplo de 36." + ColoresConsola.RESET);
+                return;
+            }
 
-        // sobrescribo los 4 bytes del entero stock en el fichero
-        raf.writeInt(nuevoStock);
+            // calculo la cantidad total de registros en disco
+            long totalRegistros = tamanoTotal / 36;
 
-        // muestro la confirmacion del cambio realizado
-        System.out.println("Actualización correcta: stock " + stockAntiguo + " -> " + nuevoStock);
+            System.out.println("---- ACCESO ALEATORIO ----");
+            System.out.println("Fichero: " + ruta.trim());
+            System.out.println("Registros: " + totalRegistros + " | Tamaño: " + tamanoTotal + " bytes");
 
-    } catch (Exception e) {
-        System.out.println(ColoresConsola.ROJO + "ERROR: " + e.getMessage() + ColoresConsola.RESET);
+            // solicito la posicion validando directamente el rango valido
+            int pos = LectorConsola.leerOpcion("Consultar posición (0-" + (totalRegistros - 1) + "): ", 0,
+                    (int) (totalRegistros - 1));
+
+            // calculo el desplazamiento directo al inicio del registro
+            long desplazamientoRegistro = (long) pos * 36;
+
+            // me posiciono con el puntero al inicio del registro seleccionado
+            raf.seek(desplazamientoRegistro);
+
+            // leo los 12 caracteres correspondientes al codigo
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 12; i++) {
+                sb.append(raf.readChar());
+            }
+            String codigo = sb.toString().trim();
+
+            // obtengo el precio y el stock antiguo guardado en el fichero
+            double precio = raf.readDouble();
+            int stockAntiguo = raf.readInt();
+
+            // muestro la informacion del registro leido
+            System.out.println(codigo + " | " + precio + " euros | stock " + stockAntiguo);
+
+            // solicito el nuevo valor del stock
+            int nuevoStock = LectorConsola.leerEntero("Nuevo stock: ");
+
+            // valido que no se introduzca un stock negativo
+            if (nuevoStock < 0) {
+                System.out.println(ColoresConsola.ROJO + "ERROR: El stock no puede ser un número negativo."
+                        + ColoresConsola.RESET);
+                return;
+            }
+
+            // calculo el desplazamiento directo hacia el campo stock (posicion * 36 + 32)
+            long desplazamientoStock = desplazamientoRegistro + 32;
+
+            // desplazo el puntero directamente al campo del entero sin reescribir la linea
+            // completa
+            raf.seek(desplazamientoStock);
+
+            // sobrescribo los 4 bytes del entero stock en el fichero
+            raf.writeInt(nuevoStock);
+
+            // muestro la confirmacion del cambio realizado
+            System.out.println("Actualización correcta: stock " + stockAntiguo + " -> " + nuevoStock);
+
+        } catch (Exception e) {
+            System.out.println(ColoresConsola.ROJO + "ERROR: " + e.getMessage() + ColoresConsola.RESET);
+        }
     }
-}
 
 }

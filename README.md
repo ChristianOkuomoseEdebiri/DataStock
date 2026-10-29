@@ -53,9 +53,6 @@ DataStock/
 │   │   └── LEEME.txt
 │   └── salidas/                          # Exportaciones y ficheros binarios generados
 │       ├── .gitkeep
-│       ├── copia_catalogo.json
-│       ├── copia_catalogo.xml
-│       ├── productos.dat                 # Persistencia binaria de objetos
 │       └── stock.bin                     # Acceso aleatorio (36 bytes/registro)
 ├── material_referencia/                  # Recursos para UT2 (SQL y ER)
 │   ├── DataStock_BD_MySQL.sql
@@ -66,14 +63,14 @@ DataStock/
 │   │   │   ├── AccesoAleatorioActividad.java
 │   │   │   └── XPathActividad.java
 │   │   ├── config/
-│   │   │   └── XmlConfig.java
+│   │   │   └── XmlConfig.java              # Configuracion para la posterior lectura/guardado de XML
 │   │   ├── modelo/
 │   │   │   ├── Categoria.java
 │   │   │   ├── MovimientoStock.java
 │   │   │   ├── Producto.java
 │   │   │   └── Proveedor.java
 │   │   ├── repository/
-│   │   │   └── ProductoXmlRepository.java
+│   │   │   └── ProductoXmlRepository.java  # Lectura y guardado seguro en XML
 │   │   ├── servicio/
 │   │   │   └── Inventario.java           # Lógica principal y persistencia
 │   │   ├── ui/
@@ -89,7 +86,7 @@ DataStock/
 └── README.md
 ```
 
-## 5. Menús que ya aparecen
+## 5. Opciones que ya aparecen
 
 **Menú principal:**
 
@@ -108,6 +105,8 @@ DataStock/
 **4. Consultar productos:** listar, buscar por código, buscar por nombre, volver.  
 **5. Exportar productos:** exportar JSON, exportar XML, volver.  
 **6. Guardar y recuperar inventario:** guardar `.dat`, recuperar `.dat`, volver.
+**7. Consula XML mediante XPath:** por codigo, por categoria, precio superior, contar.
+**8. Gestion de Stock Binario:** generar stock binario/gestionar acceso aleatorio de stock
 
 `RF-FIC-07` (XPath) y `RF-FIC-08` (`RandomAccessFile`) se ejecutan en clases independientes.
 
